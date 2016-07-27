@@ -71,7 +71,7 @@
 #define DEFAULT_THREAD_STACK_SIZE 2048000
 
 int     G_MIDI_fd;
-uint8_t G_MIDI_msg_lengths[255];
+uint8_t G_MIDI_msg_lengths[256];
 
 typedef struct _task_t {
   pthread_t task_id;

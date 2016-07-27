@@ -48,7 +48,7 @@ void SYS_error(char *error_msg, ...)
  }
 
 
-pthread_t SYS_start_task(uint8_t task_slot_id, void (*task_function)(void *params), void *task_args, int scheduling_policy, int priority)
+pthread_t SYS_start_task(uint8_t task_slot_id, void *task_function(void *params), void *task_args, int scheduling_policy, int priority)
  {
 
    uint8_t setstack_err=0;
@@ -92,7 +92,6 @@ uint8_t SYS_write_sysex_buffer_to_disk(sysex_msg_t msg_array[], uint16_t msg_cou
    int fd;
    uint16_t cnt;
    uint32_t msg_len;
-
    
    fd = open("sysex_dump.bin",O_WRONLY|O_CREAT|O_TRUNC);
 
@@ -100,6 +99,8 @@ uint8_t SYS_write_sysex_buffer_to_disk(sysex_msg_t msg_array[], uint16_t msg_cou
     write(fd,(void *)msg_array[cnt].message, msg_array[cnt].length);
 
    close(fd);
+
+   return 0;
 
  }
 
@@ -136,5 +137,8 @@ uint32_t SYS_read_sysex_buffer_from_file(char *filename, unsigned char **readin_
      free(*readin_buffer);
      return 0;
     }
+
+   return 0;
+
  }
 

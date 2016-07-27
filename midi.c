@@ -52,6 +52,8 @@ uint8_t MIDI_is_partial_message(unsigned char *buffer, uint32_t len)
      if(buffer_position > len) return 1;
      if(buffer_position == len) return 0;
    }
+  
+  return 0;
 
  }
 
@@ -84,7 +86,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
   {
 
     uint8_t midi_channel, midi_msgtype;
-    uint32_t next_message_offset, sysex_len, msg_cnt;
+    uint32_t next_message_offset = 0, sysex_len, msg_cnt;
 
     if(at_offset >= buflen)   /* end of buffer  */
      return;
