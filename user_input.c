@@ -1,7 +1,7 @@
 #include "common.h"
 #include "global.h"
 
-void SYS_keyboard_thread(void)
+void SYS_keyboard_thread(void *params)
  {
 
   uint8_t input;
@@ -13,8 +13,9 @@ void SYS_keyboard_thread(void)
     {
       input=wgetch(G_status_window);
  
-      if(input == 'r')
-       if(G_sysex_record_status == 0)
+      if(input == 'r')  
+       {
+        if(G_sysex_record_status == 0)
         {
          G_sysex_record_status = 1;
          SYS_debug(DEBUG_NORMAL,"SYS: sysex recording turned on");
@@ -24,6 +25,7 @@ void SYS_keyboard_thread(void)
          G_sysex_record_status = 0;
          SYS_debug(DEBUG_NORMAL,"SYS: sysex recording turned off");
         }
+       }
 
       if(input == 's')
        {

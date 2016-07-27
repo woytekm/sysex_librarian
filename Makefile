@@ -1,7 +1,7 @@
 
 MAKE     = make
 CC       = gcc
-CFLAGS   = -g -O3
+CFLAGS   = -g -O3 -Wall -Wno-implicit-function-declaration -Wno-unused-variable
 LIBS     = -lpthread -lncurses
 PROGNAME = sysex_librarian
 

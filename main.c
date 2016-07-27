@@ -1,7 +1,7 @@
 #include "common.h"
 #include "global.h"
 
-void main()
+int main()
  {
 
   SYS_init();

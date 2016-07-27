@@ -48,7 +48,7 @@ void SYS_error(char *error_msg, ...)
  }
 
 
-pthread_t SYS_start_task(uint8_t task_slot_id, void (*task_function)(), void *task_args, int scheduling_policy, int priority)
+pthread_t SYS_start_task(uint8_t task_slot_id, void (*task_function)(void *params), void *task_args, int scheduling_policy, int priority)
  {
 
    uint8_t setstack_err=0;

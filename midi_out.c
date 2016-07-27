@@ -4,7 +4,7 @@
 uint8_t MIDI_write_sysex_buffer(unsigned char *sysex_buffer, uint32_t len)
  {
 
-   #define SYSEX_CHUNK 8
+   #define SYSEX_CHUNK 16
 
    uint8_t buffer_empty;
    uint32_t offset = 0;
@@ -29,7 +29,7 @@ uint8_t MIDI_write_sysex_buffer(unsigned char *sysex_buffer, uint32_t len)
     {
      write(G_MIDI_fd,sysex_buffer+offset,SYSEX_CHUNK);
      offset += SYSEX_CHUNK;
-     usleep(10000);
+     usleep(5000);
      SYS_debug(DEBUG_NORMAL,"SYS: wrote chunk %d, (%d bytes)",i,offset);
     }
 

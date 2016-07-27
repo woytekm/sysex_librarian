@@ -2,7 +2,7 @@
 #include "global.h"
 
 
-void MIDI_IN_thread(void)
+void MIDI_IN_thread(void *param)
  {
 
    int pollrc,end=0;

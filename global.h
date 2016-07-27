@@ -94,8 +94,8 @@ uint16_t G_saved_sysex_msg_count;
 
 unsigned char *G_sysex_transmit_buffer;
 
-void MIDI_IN_thread(void);
-void SYS_keyboard_thread(void);
+void MIDI_IN_thread(void *params);
+void SYS_keyboard_thread(void *params);
 
 uint8_t G_curses_terminal_on;
 
