@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <getopt.h>
 
 /* serial port includes  */
 #include <termio.h>
@@ -28,5 +29,14 @@
 /* scheduling  */
 #include <linux/sched.h>
 
+#ifdef IFACE_CURSES
 /* curses */
 #include <ncurses.h>
+#endif
+
+#ifdef IFACE_HW
+
+#include "bcm2835.h"
+
+#endif
+

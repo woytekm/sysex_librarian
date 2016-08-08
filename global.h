@@ -96,6 +96,7 @@ unsigned char *G_sysex_transmit_buffer;
 
 void MIDI_IN_thread(void *params);
 void SYS_keyboard_thread(void *params);
+void SYS_shiftin_thread(void *params);
 
 uint8_t G_curses_terminal_on;
 
@@ -108,5 +109,22 @@ uint8_t G_log_to_curses;
  
 uint8_t G_sysex_record_status;
 uint8_t G_write_to_file;
+
+uint8_t G_use_iface_curses;
+uint8_t G_use_iface_hw;
+uint8_t G_global_keymap;
+
+#define SHIFTIN_DELAY 4000
+
+#define GPIO17_PL_PIN11 RPI_V2_GPIO_P1_11
+#define GPIO27_CP_PIN13 RPI_V2_GPIO_P1_13
+#define GPIO22_CE_PIN15 RPI_V2_GPIO_P1_15
+#define GPIO23_Q7_PIN16 RPI_V2_GPIO_P1_16
+
+#define DIN1  RPI_V2_GPIO_P1_35
+#define SCLK1 RPI_V2_GPIO_P1_37
+#define DC1   RPI_V2_GPIO_P1_33
+#define RST1  RPI_V2_GPIO_P1_29
+#define CS1   RPI_V2_GPIO_P1_31
 
 
