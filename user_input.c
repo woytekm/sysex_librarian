@@ -36,7 +36,9 @@ void SYS_shiftin_thread(void *params)
     }
 
    if(shift_val_new != shift_val_prev)
-    G_global_keymap = shift_val_new;
+    {
+     G_global_keymap = shift_val_new;
+    }
 
    shift_val_prev = shift_val_new;
 

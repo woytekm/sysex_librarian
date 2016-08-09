@@ -324,7 +324,7 @@ static void my_setpixel(uint8_t x, uint8_t y, uint8_t color)
 }
 
 
-void LCDdrawchar(uint8_t x, uint8_t y, char c)
+void LCDdrawchar(uint8_t x, uint8_t y, char c, uint8_t inverted)
 {
         if (y >= LCDHEIGHT) return;
         if ((x+5) >= LCDWIDTH) return;
@@ -332,10 +332,14 @@ void LCDdrawchar(uint8_t x, uint8_t y, char c)
         for ( i =0; i<5; i++ )
         {
                 uint8_t d = *(font+(c*5)+i);
+
                 uint8_t j;
+
                 for (j = 0; j<8; j++)
                 {
-                        if (d & _BV(j))
+                    if(inverted)
+                     {
+                        if (!(d & _BV(j)))
                         {
                                 my_setpixel(x+i, y+j, textcolor);
                         }
@@ -343,17 +347,48 @@ void LCDdrawchar(uint8_t x, uint8_t y, char c)
                         {
                                 my_setpixel(x+i, y+j, !textcolor);
                         }
+                     }
+                    else
+                     {
+                        if ((d & _BV(j)))
+                        {
+                                my_setpixel(x+i, y+j, textcolor);
+                        }
+                        else
+                        {
+                                my_setpixel(x+i, y+j, !textcolor);
+                        }
+                     }
                 }
         }
 
-        for ( j = 0; j<8; j++)
+       if(!inverted)
         {
+         for ( j = 0; j<8; j++)
+          {
                 my_setpixel(x+5, y+j, !textcolor);
+          }
+         for( i = 0; i<6; i++)
+          {
+                my_setpixel(x+i,y-1, !textcolor);
+          }
         }
+       else
+        {
+         for ( j = 0; j<8; j++)
+          {
+                my_setpixel(x+5, y+j, textcolor);
+          }
+         for( i = 0; i<6; i++)
+          {
+                my_setpixel(x+i,y-1, textcolor);
+          }
+        }
+
         updateBoundingBox(x, y, x+5, y + 8);
 }
 
-void LCDwrite(uint8_t c)
+void LCDwrite(uint8_t c, uint8_t is_inverted)
 {
         if (c == '\n')
         {
@@ -366,7 +401,7 @@ void LCDwrite(uint8_t c)
         }
         else
         {
-                LCDdrawchar(cursor_x, cursor_y, c);
+                LCDdrawchar(cursor_x, cursor_y, c, is_inverted);
                 cursor_x += textsize*6;
                 if (cursor_x >= (LCDWIDTH-5))
                 {
@@ -379,13 +414,13 @@ void LCDwrite(uint8_t c)
 }
 
 
-void LCDdrawstring(uint8_t x, uint8_t y, char *c)
+void LCDdrawstring(uint8_t x, uint8_t y, char *c, uint8_t is_inverted)
 {
         cursor_x = x;
         cursor_y = y;
         while (*c)
         {
-                LCDwrite(*c++);
+                LCDwrite(*c++, is_inverted);
         }
 }
 
@@ -491,5 +526,12 @@ void LCDInit(uint8_t contrast)
         // set up a bounding box for screen updates
         updateBoundingBox(0, 0, LCDWIDTH-1, LCDHEIGHT-1);
 
+}
+
+void LCDclear(void) {
+  memset(pcd8544_buffer, 0, LCDWIDTH*LCDHEIGHT/8);
+  updateBoundingBox(0, 0, LCDWIDTH-1, LCDHEIGHT-1);
+  cursor_y = cursor_x = 0;
+  LCDdisplay();
 }
 

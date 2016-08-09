@@ -11,7 +11,7 @@ void SYS_init(void)
     G_saved_sysex_msg_count = 0;
 
 #ifdef IFACE_HW
-    if(G_use_iface_hw)
+    if(G_use_iface_hw == 1)
      {
       if(!bcm2835_init())
        {
@@ -54,10 +54,14 @@ void SYS_debug(uint8_t debug_level, char *debug_msg, ...)
    {
     snprintf(message_cr,MAXMSG,"%s\n",debug_msg);
     va_start(ap, debug_msg);
-    if(G_log_to_curses)
+    if(G_use_iface_curses)
      {
       vwprintw(G_log_window, message_cr, ap);
       wrefresh(G_log_window);
+     }
+    else
+     {
+      vfprintf(stderr, message_cr, ap);
      }
     va_end(ap);
    }

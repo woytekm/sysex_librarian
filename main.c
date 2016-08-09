@@ -4,11 +4,12 @@
 int main(int argc, char **argv)
  {
 
-  char c;
+  int c;
 
   opterr = 0;
 
-  while ((c = getopt (argc, argv, "cbh")) != -1)
+  while ((c = getopt(argc, argv, "cbh")) != -1)
+   {
      switch (c)
        {
         case 'c':
@@ -44,6 +45,7 @@ int main(int argc, char **argv)
             SYS_showhelp();
            }
         }
+    }
 
    if(optind < argc) 
     { 
@@ -56,15 +58,15 @@ int main(int argc, char **argv)
   SYS_start_task(TASK_MIDI_IN, MIDI_IN_thread, NULL, SCHED_RR, PRIO_VERYHIGH95); 
 
 #ifdef IFACE_CURSES
-  if(G_use_iface_curses)
+  if(G_use_iface_curses == 1)
    SYS_start_task(TASK_KEYBOARD_IN, SYS_keyboard_thread, NULL, SCHED_RR, PRIO_HIGH89);
 #endif
 
 #ifdef IFACE_HW
-  if(G_use_iface_hw)
+  if(G_use_iface_hw == 1)
    {
     SYS_start_task(TASK_KEYBOARD_IN, SYS_shiftin_thread, NULL, SCHED_RR, PRIO_VERYHIGH90);
-    LCDdrawstring(0,2,"Sysex librarian");
+    SYS_start_task(TASK_INTERFACE_HW, SYS_hw_interface_thread, NULL, SCHED_RR, PRIO_VERYHIGH91);   
    }
 #endif
 
@@ -73,7 +75,7 @@ int main(int argc, char **argv)
   while(1)
    {
 #ifdef IFACE_CURSES
-    if(G_use_iface_curses)
+    if(G_use_iface_curses == 1)
      SYS_update_status_window();
 #endif
     usleep(50000);

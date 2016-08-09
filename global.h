@@ -51,6 +51,7 @@
 #define TASK_KEYBOARD_IN 3
 #define TASK_GPIO_IN 4
 #define TASK_GPIO_LED 5
+#define TASK_INTERFACE_HW 6
 
 #define DEBUG_NORMAL 2
 #define DEBUG_HIGH 3
@@ -97,6 +98,7 @@ unsigned char *G_sysex_transmit_buffer;
 void MIDI_IN_thread(void *params);
 void SYS_keyboard_thread(void *params);
 void SYS_shiftin_thread(void *params);
+void SYS_hw_interface_thread(void *params);
 
 uint8_t G_curses_terminal_on;
 
@@ -127,4 +129,17 @@ uint8_t G_global_keymap;
 #define RST1  RPI_V2_GPIO_P1_29
 #define CS1   RPI_V2_GPIO_P1_31
 
+
+#define VER_MAJ 0
+#define VER_MIN 1
+
+#define TEXT_INVERTED 1
+#define TEXT_NORMAL   0
+
+#define APP_SYSEX_LIBRARIAN 10
+#define APP_SEQUENCER       20
+#define APP_MIDIDUMP        30
+
+
+// end of global.h
 
