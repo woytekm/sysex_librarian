@@ -13,6 +13,8 @@ void SYS_shiftin_thread(void *params)
 
  shift_val_new = shift_val_prev = 0;
 
+ pipe(G_keyboard_event_pipe);
+
  while(1)
   {
 
@@ -37,7 +39,7 @@ void SYS_shiftin_thread(void *params)
 
    if(shift_val_new != shift_val_prev)
     {
-     G_global_keymap = shift_val_new;
+     write(G_keyboard_event_pipe[1],&shift_val_new,1);
     }
 
    shift_val_prev = shift_val_new;

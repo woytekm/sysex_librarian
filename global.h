@@ -116,6 +116,8 @@ uint8_t G_use_iface_curses;
 uint8_t G_use_iface_hw;
 uint8_t G_global_keymap;
 
+int G_keyboard_event_pipe[2];  // IPC for keyboard/encoder input events
+
 #define SHIFTIN_DELAY 4000
 
 #define GPIO17_PL_PIN11 RPI_V2_GPIO_P1_11

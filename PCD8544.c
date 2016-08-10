@@ -421,6 +421,7 @@ void LCDdrawstring(uint8_t x, uint8_t y, char *c, uint8_t is_inverted)
         while (*c)
         {
                 LCDwrite(*c++, is_inverted);
+                usleep(10);
         }
 }
 
