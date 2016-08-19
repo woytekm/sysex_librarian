@@ -1,6 +1,11 @@
 #include "PCD8544.h"
 #include "common.h"
 
+
+#ifdef enablePartialUpdate
+static uint8_t xUpdateMin, xUpdateMax, yUpdateMin, yUpdateMax;
+#endif
+
 static unsigned char  font[] = {
                 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x3E, 0x5B, 0x4F, 0x5B, 0x3E,
@@ -280,7 +285,7 @@ void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val)
                         digitalWrite(dataPin, !!(val & (1 << (7 - i))));
 
                 digitalWrite(clockPin, HIGH);
-                for (j = CLKCONST_2; j > 0; j--); // clock speed, anyone? (LCD Max CLK input: 4MHz)
+                for (j = CLKCONST_3; j > 0; j--); // clock speed, anyone? (LCD Max CLK input: 4MHz)
                 digitalWrite(clockPin, LOW);
         }
 }
@@ -292,6 +297,7 @@ void LCDspiwrite(uint8_t c)
 
 void LCDcommand(uint8_t c)
 {
+        usleep(2);
         digitalWrite( _dc, LOW);
         LCDspiwrite(c);
 }
@@ -421,7 +427,6 @@ void LCDdrawstring(uint8_t x, uint8_t y, char *c, uint8_t is_inverted)
         while (*c)
         {
                 LCDwrite(*c++, is_inverted);
-                usleep(10);
         }
 }
 
@@ -514,7 +519,7 @@ void LCDInit(uint8_t contrast)
 
         // set VOP
         if (contrast > 0x7f)
-                contrast = 0x7f;
+            contrast = 0x7f;
 
         LCDcommand( PCD8544_SETVOP | contrast); // Experimentally determined
 

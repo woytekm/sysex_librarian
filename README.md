@@ -1,5 +1,5 @@
-This is a software for small, RPi Zero based device which will record and/or play sysex files to/from MIDI synthesizers
-Code currently tested and working with Korg Wavestation EX
+This is a software for small, RPi Zero based device which i would like to become my little swiss knife for MIDI stuff. Currently i have three tools in mind: MIDI sysex librarian, very simple MIDI sequencer, and MIDI packet dump.
+
 
 
 

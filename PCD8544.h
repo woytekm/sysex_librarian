@@ -47,6 +47,7 @@
 
 #define CLKCONST_1  1000
 #define CLKCONST_2  100  // 400 is a good tested value for Raspberry Pi
+#define CLKCONST_3  5000
 
 static uint8_t cursor_x, cursor_y, textsize, textcolor;
 static int8_t _din, _sclk, _dc, _rst, _cs;
@@ -54,5 +55,7 @@ static int8_t _din, _sclk, _dc, _rst, _cs;
 uint8_t pcd8544_buffer[LCDWIDTH * LCDHEIGHT / 8] = {0,};
 
 #define _BV(bit) (0x1 << (bit))
+
+#define enablePartialUpdate 1
 
 

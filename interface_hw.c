@@ -1,53 +1,119 @@
 #include "common.h"
 #include "global.h"
 
-void IH_startup_display(void)
+uint8_t IH_choose_app()
  {
-    char *msgbuf;
-   
-    msgbuf = malloc(16);
 
-    sprintf(msgbuf," version %d.%d",VER_MAJ,VER_MIN);
-    LCDdrawstring(0,1,"  MIDI cube  ", TEXT_NORMAL);
-    LCDdrawstring(0,9,msgbuf,TEXT_NORMAL);
+  scroll_list_item_t *first_item;
+  scroll_list_item_t *next_item;
+  uint8_t list_return_code;
+  
+  first_item = IH_scroll_list_item_add(NULL,"SYSEX LIB     ",APP_SYSEX_LIBRARIAN);
+  next_item = IH_scroll_list_item_add(first_item,"MIDI SEQ      ",APP_SEQUENCER);
+  next_item = IH_scroll_list_item_add(next_item,"MIDI DUMP     ",APP_MIDIDUMP); 
+  next_item = IH_scroll_list_item_add(next_item,"ABOUT         ",APP_ABOUT); 
+
+  list_return_code = IH_scroll_list(first_item,"Choose app|   ");
+  IH_scroll_list_destroy(first_item);
+  return list_return_code;
+  
+ }
+
+uint8_t IH_about_app(void)
+ {
+  uint8_t key_event;
+  uint8_t do_exit, next_app;
+  do_exit = 0;
+
+  while(!do_exit)
+   {
+     LCDclear();
+     IH_startup_display(1);
+     IH_set_keymap_bar("","","","");
+     IH_set_status_bar(" ABOUT   |  ");
+     LCDdisplay();
+
+    SYS_debug(DEBUG_NORMAL,"reading key events");
+
+    read(G_keyboard_event_pipe[0],&key_event,1);
+
+    SYS_debug(DEBUG_NORMAL,"key event: %d",key_event);
+
+    switch(key_event)
+     {
+      case ENC_KEY:
+       next_app = IH_choose_app();
+       if(next_app != 0)
+         return next_app;
+       break;
+
+      case KEY1:
+       break;
+
+      case KEY2:
+       break;
+
+      case KEY3:
+       break;
+
+      case KEY4:
+       break;
+
+     }
+
+    LCDclear();
     LCDdisplay();
+   }
 
-    free(msgbuf);
+  return APP_ABOUT;
 
  }
-
-void IH_set_keymap_bar(char *key1, char *key2, char *key3, char *key4)
- {
-   LCDdrawstring(0,36,key1,TEXT_INVERTED);
-   LCDdrawstring(22,36,key2,TEXT_INVERTED);
-   LCDdrawstring(44,36,key3,TEXT_INVERTED);
-   LCDdrawstring(65,36,key4,TEXT_INVERTED);
-
-   LCDdisplay();
- }
-
 
 uint8_t IH_sysex_librarian_app(void)
  {
 
-  char *msgbuf;
-  uint8_t keymap;
+  uint8_t key_event;
+  uint8_t do_exit, next_app;
 
-  msgbuf = malloc(15);
+  do_exit = 0;
 
-  IH_set_keymap_bar("REC","PLY","SAV","CLR");
-
-  LCDdrawstring(0,36,"REC",TEXT_INVERTED);
-  LCDdisplay();
- 
-  while(1)
+  while(!do_exit)
    {
 
-    read(G_keyboard_event_pipe[0],&keymap,1);
+     LCDclear();
+     IH_set_keymap_bar("REC","PLY","SAV","CLR");
+     IH_set_status_bar(" SYSEX APP |  ");
+     LCDdisplay();
 
-    sprintf(msgbuf,"keymap: %d ",keymap);
+    SYS_debug(DEBUG_NORMAL,"reading key events");
 
-    LCDdrawstring(0,9,msgbuf,TEXT_NORMAL);
+    read(G_keyboard_event_pipe[0],&key_event,1);
+
+    SYS_debug(DEBUG_NORMAL,"key event: %d",key_event);
+
+    switch(key_event)
+     {
+      case ENC_KEY:
+       next_app = IH_choose_app();
+       if(next_app != 0)
+         return next_app; 
+       break;
+
+      case KEY1:
+       break;
+
+      case KEY2:
+       break;
+
+      case KEY3:
+       break;
+
+      case KEY4:
+       break;
+
+     } 
+ 
+    LCDclear();
     LCDdisplay();
 
    }
@@ -71,8 +137,8 @@ void SYS_hw_interface_thread(void *params)
 
    uint8_t next_app;
 
-   IH_startup_display();
-   sleep(5);
+   IH_startup_display(0);
+   sleep(1);
    LCDclear();
 
    // default app
@@ -92,6 +158,9 @@ void SYS_hw_interface_thread(void *params)
 
         case APP_MIDIDUMP:
          next_app = IH_mididump_app();
+
+        case APP_ABOUT:
+         next_app = IH_about_app();
 
        }
      

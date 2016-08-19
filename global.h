@@ -141,7 +141,24 @@ int G_keyboard_event_pipe[2];  // IPC for keyboard/encoder input events
 #define APP_SYSEX_LIBRARIAN 10
 #define APP_SEQUENCER       20
 #define APP_MIDIDUMP        30
+#define APP_ABOUT           40
 
+#define ENC_UP 10
+#define ENC_DOWN 20
+#define ENC_KEY 30
+#define KEY1 40
+#define KEY2 50
+#define KEY3 60
+#define KEY4 70
+
+typedef struct {
+char *item_name;
+uint8_t item_code;
+void *prev_item;
+void *next_item;
+} scroll_list_item_t;
+
+scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char *item_name, uint8_t item_code);
 
 // end of global.h
 

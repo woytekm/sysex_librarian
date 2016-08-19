@@ -70,7 +70,7 @@ int main(int argc, char **argv)
    }
 #endif
 
-  SYS_debug(DEBUG_NORMAL,"SYS: librarian startup complete.");  
+  SYS_debug(DEBUG_NORMAL,"SYS: MidiCube startup complete.");  
 
   while(1)
    {
