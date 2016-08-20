@@ -30,7 +30,7 @@ uint8_t IH_about_app(void)
      LCDclear();
      IH_startup_display(1);
      IH_set_keymap_bar("","","","");
-     IH_set_status_bar(" ABOUT   |  ");
+     IH_set_status_bar(" ABOUT     |  ");
      LCDdisplay();
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
@@ -73,16 +73,34 @@ uint8_t IH_sysex_librarian_app(void)
  {
 
   uint8_t key_event;
-  uint8_t do_exit, next_app;
+  uint8_t do_exit, next_app, edit_result, msg_cnt;
+
+  char *sysex_save_filename; // max filename len is 16 chars
+  char *sysex_play_filename;
+
+  char *sysex_msg_info;
+ 
+  scroll_list_item_t *file_list;
+
+  uint32_t total_bytes;
 
   do_exit = 0;
+  sysex_save_filename = malloc(16);
+  sysex_msg_info = malloc(16);
 
   while(!do_exit)
    {
 
      LCDclear();
      IH_set_keymap_bar("REC","PLY","SAV","CLR");
-     IH_set_status_bar(" SYSEX APP |  ");
+     IH_set_status_bar(" SYSEX LIB |  ");
+     if(G_sysex_record_status == 0)
+       LCDdrawstring(0,11,"   rec off", TEXT_NORMAL);
+     else
+       LCDdrawstring(0,11,"   rec on", TEXT_NORMAL);
+
+     sprintf(sysex_msg_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
+     LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
      LCDdisplay();
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
@@ -100,15 +118,53 @@ uint8_t IH_sysex_librarian_app(void)
        break;
 
       case KEY1:
+       if(G_sysex_record_status == 0)
+         G_sysex_record_status = 1;
+       else
+         G_sysex_record_status = 0;
        break;
 
       case KEY2:
        break;
 
       case KEY3:
+       if(G_saved_sysex_msg_count == 0)
+        {
+         IH_info("no msg to save");
+         break;
+        }
+       memset(sysex_save_filename,32,16);
+       sysex_save_filename[15] = 0x0;
+       edit_result = IH_edit_string(&sysex_save_filename);
+       if(edit_result == 1)
+        {
+          total_bytes = 0;
+          SYS_write_sysex_buffer_to_disk(G_received_sysex_msgs,G_saved_sysex_msg_count,sysex_save_filename);
+          for(msg_cnt=1; msg_cnt <= G_saved_sysex_msg_count; msg_cnt++)
+           {
+            free(G_received_sysex_msgs[msg_cnt].message);
+            total_bytes += G_received_sysex_msgs[msg_cnt].length;
+            G_received_sysex_msgs[msg_cnt].length = 0;
+           }
+
+          SYS_debug(DEBUG_NORMAL,"SYS: wrote sysex buffer to disk (%d messages, %d bytes total)",G_received_sysex_msg_count,total_bytes);
+          IH_info("sysex saved");
+          G_saved_sysex_msg_count = 0;
+        }
        break;
 
       case KEY4:
+       if(G_saved_sysex_msg_count >0)
+         {
+          for(msg_cnt=1; msg_cnt <= G_saved_sysex_msg_count; msg_cnt++)
+           {
+            free(G_received_sysex_msgs[msg_cnt].message);
+            total_bytes +=G_received_sysex_msgs[msg_cnt].length;
+            G_received_sysex_msgs[msg_cnt].length = 0;
+           }
+          SYS_debug(DEBUG_NORMAL,"SYS: sysex buffer discarded");
+          G_saved_sysex_msg_count = 0;
+         }
        break;
 
      } 

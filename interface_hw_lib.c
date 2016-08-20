@@ -71,6 +71,109 @@ scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char 
 
  }
 
+void IH_info(char *info_message)
+ {
+   uint8_t do_exit, key_event;
+
+   do_exit = 0;
+
+   LCDclear();
+   IH_set_status_bar("Info message");
+   IH_set_keymap_bar("","","","OK");
+
+   LCDdrawstring(0,17,info_message,TEXT_NORMAL);
+   LCDdisplay();
+
+   while(!do_exit)
+    {
+     read(G_keyboard_event_pipe[0],&key_event,1);
+     switch(key_event)
+       {
+        case KEY4:
+         return;
+       }
+    }
+
+ }
+
+uint8_t IH_edit_string(char **edit_string)
+ {
+   uint8_t do_exit,cursor_pos,cursor_pos_screen,key_event;
+
+   do_exit = 0;
+   cursor_pos = 0;
+   cursor_pos_screen = 0;
+   key_event = 0;
+   char tmp_string[16];
+
+   LCDclear();
+
+   IH_set_status_bar("Enter name:");
+   IH_set_keymap_bar("OK ","<- "," ->","ESC");
+ 
+   memset(&tmp_string,32,16);
+   tmp_string[15] = 0x0;
+
+   while(!do_exit)
+    { 
+     LCDdrawstring(0,15,&tmp_string,TEXT_NORMAL);
+     LCDdrawstring(0,25,"              ",TEXT_NORMAL);
+     LCDdrawstring(cursor_pos_screen,25,"^",TEXT_NORMAL);
+     LCDdisplay();
+
+     read(G_keyboard_event_pipe[0],&key_event,1);
+
+     switch(key_event)
+       {
+
+        case ENC_KEY:
+           if(cursor_pos < 13)
+            {
+             cursor_pos++;
+             cursor_pos_screen += 6;
+            }
+           break;
+           
+        case ENC_UP:
+           if(tmp_string[cursor_pos]<127)
+             tmp_string[cursor_pos]++;
+           break;
+
+        case ENC_DOWN:
+           if(tmp_string[cursor_pos]>32)
+             tmp_string[cursor_pos]--;
+           break;
+
+        case KEY1:
+           strncpy(*edit_string,tmp_string,16);
+           return 1;
+           break;
+
+        case KEY2:
+           if(cursor_pos > 0)
+            {
+             cursor_pos--;
+             cursor_pos_screen -= 6;
+            }
+           break;
+
+        case KEY3:
+           if(cursor_pos < 13)
+            {
+             cursor_pos++;
+             cursor_pos_screen += 6;
+            }
+           break;
+
+        case KEY4: //ESC
+           return 0;
+       }
+    }
+
+  return 0;
+
+ }
+
 uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_title)
  {
 

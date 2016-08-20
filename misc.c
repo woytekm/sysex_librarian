@@ -119,14 +119,17 @@ pthread_t SYS_start_task(uint8_t task_slot_id, void *task_function(void *params)
  }
 
 
-uint8_t SYS_write_sysex_buffer_to_disk(sysex_msg_t msg_array[], uint16_t msg_count)
+uint8_t SYS_write_sysex_buffer_to_disk(sysex_msg_t msg_array[], uint16_t msg_count, char *filename)
  {
 
    int fd;
    uint16_t cnt;
    uint32_t msg_len;
    
-   fd = open("sysex_dump.bin",O_WRONLY|O_CREAT|O_TRUNC);
+   if(chdir(DEFAULT_SYSEX_DIR) == -1)
+    return 1;
+
+   fd = open(filename,O_WRONLY|O_CREAT|O_TRUNC);
 
    for(cnt = 1; cnt <= msg_count; cnt++)
     write(fd,(void *)msg_array[cnt].message, msg_array[cnt].length);

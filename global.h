@@ -160,5 +160,7 @@ void *next_item;
 
 scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char *item_name, uint8_t item_code);
 
+#define DEFAULT_SYSEX_DIR "/usr/local/share/midicube/sysex"
+
 // end of global.h
 
