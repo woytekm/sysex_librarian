@@ -75,7 +75,7 @@ void SYS_shiftin_thread(void *params)
      else if((shift_val_new & 1) == 0)
       event = ENC_KEY;
 
-     if(event)
+     if((event == KEY1) || (event == KEY2) || (event == KEY3) || (event == KEY4) || (event == ENC_KEY))
        write(G_keyboard_event_pipe[1],&event,1);
      else
       {

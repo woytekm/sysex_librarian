@@ -13,7 +13,7 @@ uint8_t IH_choose_app()
   next_item = IH_scroll_list_item_add(next_item,"MIDI DUMP     ",APP_MIDIDUMP); 
   next_item = IH_scroll_list_item_add(next_item,"ABOUT         ",APP_ABOUT); 
 
-  list_return_code = IH_scroll_list(first_item,"Choose app|   ");
+  list_return_code = IH_scroll_list(first_item,"Choose app    ");
   IH_scroll_list_destroy(first_item);
   return list_return_code;
   
@@ -30,7 +30,7 @@ uint8_t IH_about_app(void)
      LCDclear();
      IH_startup_display(1);
      IH_set_keymap_bar("","","","");
-     IH_set_status_bar(" ABOUT     |  ");
+     IH_set_status_bar(" ABOUT        ");
      LCDdisplay();
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
@@ -69,20 +69,17 @@ uint8_t IH_about_app(void)
 
  }
 
+
 uint8_t IH_sysex_librarian_app(void)
  {
 
   uint8_t key_event;
-  uint8_t do_exit, next_app, edit_result, msg_cnt;
-
+  uint8_t do_exit, next_app, edit_result, file_number;
+  uint32_t send_buffer_len;
   char *sysex_save_filename; // max filename len is 16 chars
   char *sysex_play_filename;
-
   char *sysex_msg_info;
- 
   scroll_list_item_t *file_list;
-
-  uint32_t total_bytes;
 
   do_exit = 0;
   sysex_save_filename = malloc(16);
@@ -91,17 +88,19 @@ uint8_t IH_sysex_librarian_app(void)
   while(!do_exit)
    {
 
-     LCDclear();
-     IH_set_keymap_bar("REC","PLY","SAV","CLR");
-     IH_set_status_bar(" SYSEX LIB |  ");
-     if(G_sysex_record_status == 0)
+    // update main app screen
+
+    LCDclear();
+    IH_set_keymap_bar("REC","PLY","SAV","CLR");
+    IH_set_status_bar(" SYSEX LIB    ");
+    if(G_sysex_record_status == 0)
        LCDdrawstring(0,11,"   rec off", TEXT_NORMAL);
-     else
+    else
        LCDdrawstring(0,11,"   rec on", TEXT_NORMAL);
 
-     sprintf(sysex_msg_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
-     LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
-     LCDdisplay();
+    sprintf(sysex_msg_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
+    LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
+    LCDdisplay();
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
 
@@ -109,8 +108,11 @@ uint8_t IH_sysex_librarian_app(void)
 
     SYS_debug(DEBUG_NORMAL,"key event: %d",key_event);
 
+    // run main app loop and respond to key events
+
     switch(key_event)
      {
+
       case ENC_KEY:
        next_app = IH_choose_app();
        if(next_app != 0)
@@ -125,12 +127,43 @@ uint8_t IH_sysex_librarian_app(void)
        break;
 
       case KEY2:
+       file_list = IH_get_file_list(DEFAULT_SYSEX_DIR);
+       if(file_list == NULL)
+        {
+         IH_info("no files");
+         break;
+        }
+       file_number = IH_scroll_list(file_list,"Choose file   ");
+       if(file_number>0)
+        {
+          sysex_play_filename = IH_get_file_name_from_code(file_number,file_list);
+          if(sysex_play_filename == NULL)
+           break;
+          chdir(DEFAULT_SYSEX_DIR);
+          send_buffer_len = SYS_read_sysex_buffer_from_file(sysex_play_filename,&G_sysex_transmit_buffer);
+          if(send_buffer_len > 0)
+           {
+            LCDclear();
+            IH_set_status_bar(" SYSEX SEND  ");
+            IH_quick_info(" sending sysex");
+            MIDI_write_sysex_buffer(G_sysex_transmit_buffer,send_buffer_len);
+            IH_quick_info("  finished   ");
+            sleep(1);
+           }
+          else
+           {
+            SYS_debug("SYS: read sysex file failed. Nothing sent to MIDI OUT.");
+            IH_info("file read err");
+           }
+          free(sysex_play_filename);
+        } 
+       
        break;
 
       case KEY3:
        if(G_saved_sysex_msg_count == 0)
         {
-         IH_info("no msg to save");
+         IH_info(" buffer empty");
          break;
         }
        memset(sysex_save_filename,32,16);
@@ -138,30 +171,22 @@ uint8_t IH_sysex_librarian_app(void)
        edit_result = IH_edit_string(&sysex_save_filename);
        if(edit_result == 1)
         {
-          total_bytes = 0;
-          SYS_write_sysex_buffer_to_disk(G_received_sysex_msgs,G_saved_sysex_msg_count,sysex_save_filename);
-          for(msg_cnt=1; msg_cnt <= G_saved_sysex_msg_count; msg_cnt++)
+          if(SYS_write_sysex_buffer_to_disk(G_received_sysex_msgs,G_saved_sysex_msg_count,sysex_save_filename) > 0)
            {
-            free(G_received_sysex_msgs[msg_cnt].message);
-            total_bytes += G_received_sysex_msgs[msg_cnt].length;
-            G_received_sysex_msgs[msg_cnt].length = 0;
+            IH_info(" save failed");
            }
-
-          SYS_debug(DEBUG_NORMAL,"SYS: wrote sysex buffer to disk (%d messages, %d bytes total)",G_received_sysex_msg_count,total_bytes);
-          IH_info("sysex saved");
-          G_saved_sysex_msg_count = 0;
+          else
+           {
+            SYS_free_sysex_buffer();
+            IH_info(" sysex saved");
+           }
         }
        break;
 
       case KEY4:
        if(G_saved_sysex_msg_count >0)
          {
-          for(msg_cnt=1; msg_cnt <= G_saved_sysex_msg_count; msg_cnt++)
-           {
-            free(G_received_sysex_msgs[msg_cnt].message);
-            total_bytes +=G_received_sysex_msgs[msg_cnt].length;
-            G_received_sysex_msgs[msg_cnt].length = 0;
-           }
+          SYS_free_sysex_buffer();
           SYS_debug(DEBUG_NORMAL,"SYS: sysex buffer discarded");
           G_saved_sysex_msg_count = 0;
          }
@@ -225,3 +250,35 @@ void SYS_hw_interface_thread(void *params)
     }
 
  }
+
+uint8_t IH_MIDI_inout_indicator()
+ {
+
+  uint8_t event_type;
+
+  pipe(G_MIDI_inout_event_pipe);
+
+  // flash MIDI in/out indicators when MIDI packets are going in/out of the device
+
+  while(1)
+   {
+    ioctl(G_MIDI_inout_event_pipe[0],I_FLUSH,FLUSHRW);  // we don't want these events to queue 
+    read(G_MIDI_inout_event_pipe[0],&event_type,1);
+    if(event_type == MIDI_IN)
+     {
+       LCDdrawstring(70,1,"I",TEXT_INVERTED);
+     }
+    else if(event_type == MIDI_OUT)
+     {
+       LCDdrawstring(78,1,"O",TEXT_INVERTED);
+     }
+    LCDdisplay();
+    usleep(50000);
+    LCDdrawstring(70,1,"  ",TEXT_INVERTED);
+    LCDdisplay();
+    usleep(50000);
+   }
+
+ }
+
+

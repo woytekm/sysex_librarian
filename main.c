@@ -67,6 +67,7 @@ int main(int argc, char **argv)
    {
     SYS_start_task(TASK_KEYBOARD_IN, SYS_shiftin_thread, NULL, SCHED_RR, PRIO_VERYHIGH90);
     SYS_start_task(TASK_INTERFACE_HW, SYS_hw_interface_thread, NULL, SCHED_RR, PRIO_VERYHIGH91);   
+    SYS_start_task(TASK_MIDI_INOUT_INDICATOR, IH_MIDI_inout_indicator, NULL, SCHED_RR, PRIO_VERYHIGH92);
    }
 #endif
 

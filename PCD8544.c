@@ -285,7 +285,8 @@ void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val)
                         digitalWrite(dataPin, !!(val & (1 << (7 - i))));
 
                 digitalWrite(clockPin, HIGH);
-                for (j = CLKCONST_3; j > 0; j--); // clock speed, anyone? (LCD Max CLK input: 4MHz)
+                usleep(15);
+                //for (j = CLKCONST_3; j > 0; j--); // clock speed, anyone? (LCD Max CLK input: 4MHz)
                 digitalWrite(clockPin, LOW);
         }
 }

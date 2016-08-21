@@ -6,7 +6,7 @@ void MIDI_IN_thread(void *param)
  {
 
    int pollrc,end=0;
-   uint8_t free_SID, midi_channel, midi_msgtype, last_message_incomplete, i;
+   uint8_t free_SID, midi_channel, midi_msgtype, last_message_incomplete, i, event;
    uint32_t rc, rcdelta;
    unsigned char midi_message_buffer[MIDI_IN_BUFLEN];
    struct pollfd fds;
@@ -73,6 +73,11 @@ void MIDI_IN_thread(void *param)
            bzero(midi_message_buffer, rc);
            last_message_incomplete = 1;
            rc = rcdelta = 0;
+            
+#ifdef INTERFACE_HW
+          event = KEY_REFESH_DISPLAY;
+          write(G_keyboard_event_pipe[1],&event,1);
+#endif
 
           } /* if(rc > 0)  */
 

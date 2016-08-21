@@ -52,6 +52,7 @@
 #define TASK_GPIO_IN 4
 #define TASK_GPIO_LED 5
 #define TASK_INTERFACE_HW 6
+#define TASK_MIDI_INOUT_INDICATOR 7
 
 #define DEBUG_NORMAL 2
 #define DEBUG_HIGH 3
@@ -117,6 +118,7 @@ uint8_t G_use_iface_hw;
 uint8_t G_global_keymap;
 
 int G_keyboard_event_pipe[2];  // IPC for keyboard/encoder input events
+int G_MIDI_inout_event_pipe[2];  // IPC for keyboard/encoder input events
 
 #define SHIFTIN_DELAY 4000
 
@@ -130,7 +132,6 @@ int G_keyboard_event_pipe[2];  // IPC for keyboard/encoder input events
 #define DC1   RPI_V2_GPIO_P1_33
 #define RST1  RPI_V2_GPIO_P1_29
 #define CS1   RPI_V2_GPIO_P1_31
-
 
 #define VER_MAJ 0
 #define VER_MIN 1
@@ -150,6 +151,10 @@ int G_keyboard_event_pipe[2];  // IPC for keyboard/encoder input events
 #define KEY2 50
 #define KEY3 60
 #define KEY4 70
+#define KEY_REFRESH_DISPLAY 100
+
+#define MIDI_IN 10
+#define MIDI_OUT 20
 
 typedef struct {
 char *item_name;
@@ -159,6 +164,9 @@ void *next_item;
 } scroll_list_item_t;
 
 scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char *item_name, uint8_t item_code);
+scroll_list_item_t *IH_get_file_list(char *directory);
+char *IH_get_file_name_from_code(uint8_t code, scroll_list_item_t *fist_item);
+uint8_t IH_MIDI_inout_indicator();
 
 #define DEFAULT_SYSEX_DIR "/usr/local/share/midicube/sysex"
 

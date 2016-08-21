@@ -85,11 +85,17 @@ void MIDI_init_MIDI_msg_lenghts(void)
  void MIDI_parse_msgbuffer(unsigned char *midi_in_buffer, uint32_t at_offset, uint32_t buflen)
   {
 
-    uint8_t midi_channel, midi_msgtype;
+    uint8_t midi_channel, midi_msgtype, event_type;
     uint32_t next_message_offset = 0, sysex_len, msg_cnt;
 
     if(at_offset >= buflen)   /* end of buffer  */
      return;
+
+#ifdef INTERFACE_HW
+     // tell appropriate thread to signal incoming MIDI on the display
+     event_type = MIDI_IN;
+     write(G_MIDI_inout_event_pipe[1],&event_type,1);
+#endif
 
     if(midi_in_buffer[at_offset] < 240)  /* channel related message - let's split channel number and message type */
      {

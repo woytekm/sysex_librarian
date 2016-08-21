@@ -47,6 +47,7 @@ void IH_set_status_bar(char *app_name)
    LCDdisplay();
  }
 
+
 scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char *item_name, uint8_t item_code)
  {
 
@@ -71,6 +72,81 @@ scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char 
 
  }
 
+char *IH_get_file_name_from_code(uint8_t code, scroll_list_item_t *first_item)
+ {
+  char *filename;
+  scroll_list_item_t *curr_item;
+
+  filename = malloc(1024);
+
+  curr_item = first_item;
+
+  while(curr_item->next_item != NULL)
+   {
+    if(curr_item->item_code == code)
+     {
+      if(strlen(curr_item->item_name) > 1024)
+       {
+        free(filename);
+        return NULL;
+       }
+      strncpy(filename,curr_item->item_name, 1024);
+      return filename;
+     }
+    curr_item = curr_item->next_item;
+   }
+
+  free(filename);
+  return NULL;
+ }
+
+scroll_list_item_t *IH_get_file_list(char *directory)
+ {
+   uint8_t item_counter,first;
+   DIR           *d;
+   struct dirent *dir;
+   scroll_list_item_t *first_item;
+   scroll_list_item_t *next_item;
+   scroll_list_item_t *prev_item;
+
+   first_item = NULL;
+   item_counter = 1;
+   first = 1;
+
+   d = opendir(directory);
+
+   if(d)
+    {
+      while ((dir = readdir(d)) != NULL)
+      {
+       if( (strcmp(dir->d_name,".") != 0) && (strcmp(dir->d_name,"..") != 0)  && (dir->d_type == DT_REG) )
+        {
+         if(first)
+          { 
+           first_item = IH_scroll_list_item_add(NULL,dir->d_name,item_counter);
+           prev_item = first_item;
+           first = 0;
+          }
+         else
+          {
+           next_item = IH_scroll_list_item_add(prev_item,dir->d_name,item_counter);
+           prev_item = next_item;
+          }
+        item_counter++;
+       }
+      }
+
+    closedir(d);
+    }
+   else
+    {
+      return NULL;
+    }
+
+  return first_item;
+
+ }
+
 void IH_info(char *info_message)
  {
    uint8_t do_exit, key_event;
@@ -78,7 +154,7 @@ void IH_info(char *info_message)
    do_exit = 0;
 
    LCDclear();
-   IH_set_status_bar("Info message");
+   IH_set_status_bar("Info message  ");
    IH_set_keymap_bar("","","","OK");
 
    LCDdrawstring(0,17,info_message,TEXT_NORMAL);
@@ -93,6 +169,16 @@ void IH_info(char *info_message)
          return;
        }
     }
+
+ }
+
+void IH_quick_info(char *info_message)
+ {
+   // leave status bar and keymap bar as they are, just clear center of the display and show message 
+   LCDdrawstring(0,11,"              ", TEXT_NORMAL);
+   LCDdrawstring(0,21,"              ", TEXT_NORMAL);
+   LCDdrawstring(0,17,info_message, TEXT_NORMAL);
+   LCDdisplay();
 
  }
 
@@ -178,8 +264,11 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
  {
 
    scroll_list_item_t *curr_item, *next_item;
+   char *display_string;
+
    uint8_t do_exit, key_event;
-  
+ 
+   display_string = malloc(16); 
    do_exit = 0;
    
    curr_item = item_list_first_item;
@@ -191,11 +280,15 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
 
    while(!do_exit)
     {
-     LCDdrawstring(0,12,curr_item->item_name,TEXT_INVERTED);
+     strncpy(display_string,curr_item->item_name,14);
+     display_string[14] = 0x0;
+     LCDdrawstring(0,12,display_string,TEXT_INVERTED);
      if(curr_item->next_item != NULL)
       {
         next_item = curr_item->next_item;
-        LCDdrawstring(0,21,next_item->item_name,TEXT_NORMAL);
+        strncpy(display_string,next_item->item_name,14);
+        display_string[14] = 0x0;
+        LCDdrawstring(0,21,display_string,TEXT_NORMAL);
       }
      else
       LCDdrawstring(0,21,"              ",TEXT_NORMAL);
@@ -218,11 +311,13 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
              curr_item = curr_item->prev_item;
             break;
         case KEY4:
+           free(display_string);
            return 0;
       }
 
     }
 
+   free(display_string);
    return curr_item->item_code;
 
  }

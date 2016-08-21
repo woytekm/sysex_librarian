@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <getopt.h>
+#include <dirent.h>
+#include <stropts.h>
 
 /* serial port includes  */
 #include <termio.h>

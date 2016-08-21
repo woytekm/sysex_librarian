@@ -129,10 +129,17 @@ uint8_t SYS_write_sysex_buffer_to_disk(sysex_msg_t msg_array[], uint16_t msg_cou
    if(chdir(DEFAULT_SYSEX_DIR) == -1)
     return 1;
 
-   fd = open(filename,O_WRONLY|O_CREAT|O_TRUNC);
+   if( (fd = open(filename,O_WRONLY|O_CREAT|O_TRUNC)) == -1 )
+    return 1;
 
    for(cnt = 1; cnt <= msg_count; cnt++)
-    write(fd,(void *)msg_array[cnt].message, msg_array[cnt].length);
+    {
+      if( write(fd,(void *)msg_array[cnt].message, msg_array[cnt].length) == -1)
+       {
+         close(fd);
+         return 1;
+       }
+    }
 
    close(fd);
 
@@ -178,3 +185,22 @@ uint32_t SYS_read_sysex_buffer_from_file(char *filename, unsigned char **readin_
 
  }
 
+uint32_t SYS_free_sysex_buffer(void)
+ {
+   uint8_t msg_cnt;
+   uint32_t total_bytes;
+
+   total_bytes = 0;
+
+   for(msg_cnt=1; msg_cnt <= G_saved_sysex_msg_count; msg_cnt++)
+     {
+       free(G_received_sysex_msgs[msg_cnt].message);
+       total_bytes += G_received_sysex_msgs[msg_cnt].length;
+       G_received_sysex_msgs[msg_cnt].length = 0;
+     }
+
+  G_saved_sysex_msg_count = 0;
+
+  return total_bytes;
+
+ }
