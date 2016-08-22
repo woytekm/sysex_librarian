@@ -6,7 +6,7 @@ void MIDI_IN_thread(void *param)
  {
 
    int pollrc,end=0;
-   uint8_t free_SID, midi_channel, midi_msgtype, last_message_incomplete, i, event;
+   uint8_t free_SID, midi_channel, midi_msgtype, last_message_incomplete, i, event_type;
    uint32_t rc, rcdelta;
    unsigned char midi_message_buffer[MIDI_IN_BUFLEN];
    struct pollfd fds;
@@ -60,6 +60,14 @@ void MIDI_IN_thread(void *param)
                 if(rcdelta == 0) continue;  /* second read is empty - seems like truncated message - discard it */
                 else if( (rc + rcdelta) >= MIDI_IN_BUFLEN) continue; /* next read will probably cause buffer overflow - discard */
                 else rc += rcdelta;
+#ifdef IFACE_HW
+                if(G_use_iface_hw == 1)
+                  {
+                    // tell appropriate thread to signal outgoing MIDI on the display
+                    event_type = MIDI_IN;
+                    write(G_MIDI_inout_event_pipe[1],&event_type,1);
+                  }
+#endif            
                } 
               else last_message_incomplete = 0;
              }
@@ -74,11 +82,6 @@ void MIDI_IN_thread(void *param)
            last_message_incomplete = 1;
            rc = rcdelta = 0;
             
-#ifdef INTERFACE_HW
-          event = KEY_REFESH_DISPLAY;
-          write(G_keyboard_event_pipe[1],&event,1);
-#endif
-
           } /* if(rc > 0)  */
 
         } /* if( fds.revents & POLLIN)  */

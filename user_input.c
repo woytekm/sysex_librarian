@@ -91,7 +91,8 @@ void SYS_shiftin_thread(void *params)
        if(encval != encval_prev)
         {
           event = decode_encoder_event(encval, encval_prev, encval_prev_prev);
-          write(G_keyboard_event_pipe[1],&event,1);
+          if((event == ENC_UP) || (event == ENC_DOWN))
+            write(G_keyboard_event_pipe[1],&event,1);
         }
        }
 

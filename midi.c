@@ -91,10 +91,13 @@ void MIDI_init_MIDI_msg_lenghts(void)
     if(at_offset >= buflen)   /* end of buffer  */
      return;
 
-#ifdef INTERFACE_HW
+#ifdef IFACE_HW
      // tell appropriate thread to signal incoming MIDI on the display
-     event_type = MIDI_IN;
-     write(G_MIDI_inout_event_pipe[1],&event_type,1);
+     if(G_use_iface_hw == 1)
+      {
+        event_type = MIDI_IN;
+        write(G_MIDI_inout_event_pipe[1],&event_type,1);
+      }
 #endif
 
     if(midi_in_buffer[at_offset] < 240)  /* channel related message - let's split channel number and message type */

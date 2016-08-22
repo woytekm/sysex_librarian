@@ -1,4 +1,5 @@
 #include "PCD8544.h"
+#include "global.h"
 #include "common.h"
 
 
@@ -539,6 +540,8 @@ void LCDclear(void) {
   memset(pcd8544_buffer, 0, LCDWIDTH*LCDHEIGHT/8);
   updateBoundingBox(0, 0, LCDWIDTH-1, LCDHEIGHT-1);
   cursor_y = cursor_x = 0;
+  pthread_mutex_lock(&G_display_lock);
   LCDdisplay();
+  pthread_mutex_unlock(&G_display_lock);
 }
 

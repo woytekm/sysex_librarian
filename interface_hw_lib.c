@@ -21,7 +21,9 @@ void IH_startup_display(uint8_t about)
        LCDdrawstring(0,21,msgbuf,TEXT_NORMAL);
      }
 
+    pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
 
     free(msgbuf);
 
@@ -38,13 +40,17 @@ void IH_set_keymap_bar(char *key1, char *key2, char *key3, char *key4)
    if(strlen(key4))
      LCDdrawstring(65,36,key4,TEXT_INVERTED);
 
+   pthread_mutex_lock(&G_display_lock);
    LCDdisplay();
+   pthread_mutex_unlock(&G_display_lock);
  }
 
 void IH_set_status_bar(char *app_name)
  {
    LCDdrawstring(0,1,app_name,TEXT_INVERTED);
+   pthread_mutex_lock(&G_display_lock);
    LCDdisplay();
+   pthread_mutex_unlock(&G_display_lock);
  }
 
 
@@ -158,7 +164,9 @@ void IH_info(char *info_message)
    IH_set_keymap_bar("","","","OK");
 
    LCDdrawstring(0,17,info_message,TEXT_NORMAL);
+   pthread_mutex_lock(&G_display_lock);
    LCDdisplay();
+   pthread_mutex_unlock(&G_display_lock);
 
    while(!do_exit)
     {
@@ -178,7 +186,9 @@ void IH_quick_info(char *info_message)
    LCDdrawstring(0,11,"              ", TEXT_NORMAL);
    LCDdrawstring(0,21,"              ", TEXT_NORMAL);
    LCDdrawstring(0,17,info_message, TEXT_NORMAL);
+   pthread_mutex_lock(&G_display_lock);
    LCDdisplay();
+   pthread_mutex_unlock(&G_display_lock);
 
  }
 
@@ -205,7 +215,9 @@ uint8_t IH_edit_string(char **edit_string)
      LCDdrawstring(0,15,&tmp_string,TEXT_NORMAL);
      LCDdrawstring(0,25,"              ",TEXT_NORMAL);
      LCDdrawstring(cursor_pos_screen,25,"^",TEXT_NORMAL);
+     pthread_mutex_lock(&G_display_lock);
      LCDdisplay();
+     pthread_mutex_unlock(&G_display_lock);
 
      read(G_keyboard_event_pipe[0],&key_event,1);
 
@@ -293,7 +305,9 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
      else
       LCDdrawstring(0,21,"              ",TEXT_NORMAL);
 
+     pthread_mutex_lock(&G_display_lock);
      LCDdisplay();
+     pthread_mutex_unlock(&G_display_lock);
 
      read(G_keyboard_event_pipe[0],&key_event,1);
 

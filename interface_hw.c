@@ -31,7 +31,9 @@ uint8_t IH_about_app(void)
      IH_startup_display(1);
      IH_set_keymap_bar("","","","");
      IH_set_status_bar(" ABOUT        ");
+     pthread_mutex_lock(&G_display_lock);
      LCDdisplay();
+     pthread_mutex_unlock(&G_display_lock);
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
 
@@ -62,7 +64,9 @@ uint8_t IH_about_app(void)
      }
 
     LCDclear();
+    pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
    }
 
   return APP_ABOUT;
@@ -100,7 +104,9 @@ uint8_t IH_sysex_librarian_app(void)
 
     sprintf(sysex_msg_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
     LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
+    pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
 
@@ -195,7 +201,9 @@ uint8_t IH_sysex_librarian_app(void)
      } 
  
     LCDclear();
+    pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
 
    }
  
@@ -262,6 +270,7 @@ uint8_t IH_MIDI_inout_indicator()
 
   while(1)
    {
+    event_type = 0;
     ioctl(G_MIDI_inout_event_pipe[0],I_FLUSH,FLUSHRW);  // we don't want these events to queue 
     read(G_MIDI_inout_event_pipe[0],&event_type,1);
     if(event_type == MIDI_IN)
@@ -272,10 +281,14 @@ uint8_t IH_MIDI_inout_indicator()
      {
        LCDdrawstring(78,1,"O",TEXT_INVERTED);
      }
+    pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
     usleep(50000);
     LCDdrawstring(70,1,"  ",TEXT_INVERTED);
+    pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
     usleep(50000);
    }
 

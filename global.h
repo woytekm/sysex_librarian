@@ -170,5 +170,7 @@ uint8_t IH_MIDI_inout_indicator();
 
 #define DEFAULT_SYSEX_DIR "/usr/local/share/midicube/sysex"
 
+pthread_mutex_t G_display_lock;
+
 // end of global.h
 
