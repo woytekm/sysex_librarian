@@ -263,16 +263,29 @@ uint8_t IH_MIDI_inout_indicator()
  {
 
   uint8_t event_type;
+  int flags;
+  char  fake_buffer[4096];
 
   pipe(G_MIDI_inout_event_pipe);
 
+  fcntl(G_MIDI_inout_event_pipe[0], F_SETPIPE_SZ, 4096);
+  
   // flash MIDI in/out indicators when MIDI packets are going in/out of the device
 
   while(1)
    {
     event_type = 0;
-    ioctl(G_MIDI_inout_event_pipe[0],I_FLUSH,FLUSHRW);  // we don't want these events to queue 
-    read(G_MIDI_inout_event_pipe[0],&event_type,1);
+
+    flags = fcntl(G_MIDI_inout_event_pipe[0], F_GETFL, 0); 
+    flags |= O_NONBLOCK;
+    fcntl(G_MIDI_inout_event_pipe[0], F_SETFL, flags);
+    read(G_MIDI_inout_event_pipe[0],&fake_buffer,4096);  // flush the pipe by reading entire buffer at once
+
+    flags &= ~O_NONBLOCK;
+    fcntl(G_MIDI_inout_event_pipe[0], F_SETFL, flags);
+
+    read(G_MIDI_inout_event_pipe[0],&event_type,1);  // now wait for incoming events
+
     if(event_type == MIDI_IN)
      {
        LCDdrawstring(70,1,"I",TEXT_INVERTED);
@@ -285,7 +298,7 @@ uint8_t IH_MIDI_inout_indicator()
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
     usleep(50000);
-    LCDdrawstring(70,1,"  ",TEXT_INVERTED);
+    LCDdrawstring(71,1,"  ",TEXT_INVERTED);
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
