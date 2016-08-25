@@ -180,6 +180,19 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(sysex_len == 0)   /* MIDI_get_sysex_len detected incomplete sysex message  - drop it */
        return;
 
+#ifdef IFACE_HW  // refresh display 
+
+      if(G_use_iface_hw)
+       {
+        if(G_active_app == APP_SYSEX_LIBRARIAN)
+         {
+          event_type = KEY_REFRESH_DISPLAY;
+          write(G_keyboard_event_pipe[1],&event_type,1);
+         }
+       }
+
+#endif
+ 
       next_message_offset = at_offset + sysex_len;
       break;
 

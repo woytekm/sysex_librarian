@@ -163,6 +163,19 @@ void *prev_item;
 void *next_item;
 } scroll_list_item_t;
 
+typedef struct {
+void *packet_buffer;
+uint32_t packet_len;
+uint16_t packet_no;
+void *prev_packet;
+void *next_packet;
+} midi_packet_t;
+
+midi_packet_t G_packet_dump_chain;
+uint16_t G_packet_dump_count;
+
+midi_packet_t *MD_add_packet_to_chain(void *buffer_from, uint32_t packet_len, midi_packet_t *last_packet);
+
 scroll_list_item_t *IH_scroll_list_item_add(scroll_list_item_t *prev_item, char *item_name, uint8_t item_code);
 scroll_list_item_t *IH_get_file_list(char *directory);
 char *IH_get_file_name_from_code(uint8_t code, scroll_list_item_t *fist_item);
@@ -171,6 +184,8 @@ uint8_t IH_MIDI_inout_indicator();
 #define DEFAULT_SYSEX_DIR "/usr/local/share/midicube/sysex"
 
 pthread_mutex_t G_display_lock;
+
+uint8_t G_active_app;
 
 // end of global.h
 

@@ -294,12 +294,14 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
     {
      strncpy(display_string,curr_item->item_name,14);
      display_string[14] = 0x0;
+     LCDdrawstring(0,12,"              ",TEXT_NORMAL);
      LCDdrawstring(0,12,display_string,TEXT_INVERTED);
      if(curr_item->next_item != NULL)
       {
         next_item = curr_item->next_item;
         strncpy(display_string,next_item->item_name,14);
         display_string[14] = 0x0;
+        LCDdrawstring(0,21,"              ",TEXT_NORMAL);
         LCDdrawstring(0,21,display_string,TEXT_NORMAL);
       }
      else

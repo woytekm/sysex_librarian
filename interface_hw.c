@@ -25,6 +25,8 @@ uint8_t IH_about_app(void)
   uint8_t do_exit, next_app;
   do_exit = 0;
 
+  G_active_app = APP_ABOUT;
+
   while(!do_exit)
    {
      LCDclear();
@@ -84,6 +86,8 @@ uint8_t IH_sysex_librarian_app(void)
   char *sysex_play_filename;
   char *sysex_msg_info;
   scroll_list_item_t *file_list;
+
+  G_active_app = APP_SYSEX_LIBRARIAN;
 
   do_exit = 0;
   sysex_save_filename = malloc(16);
@@ -213,11 +217,17 @@ uint8_t IH_sysex_librarian_app(void)
 
 uint8_t IH_sequencer_app(void)
  {
+
+   G_active_app = APP_SEQUENCER;
+
    return APP_SYSEX_LIBRARIAN;
  }
 
 uint8_t IH_mididump_app(void)
  {
+
+  G_active_app = APP_MIDIDUMP;
+
   return APP_SYSEX_LIBRARIAN;
  }
 
