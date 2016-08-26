@@ -9,6 +9,8 @@ void SYS_init(void)
     G_sysex_record_status = 0;
     G_received_sysex_msg_count = 0;
     G_saved_sysex_msg_count = 0;
+    G_mididump_packet_chain = NULL;
+    G_mididump_packet_count = 0;
 
 #ifdef IFACE_HW
     if(G_use_iface_hw == 1)

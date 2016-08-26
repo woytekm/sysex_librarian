@@ -171,8 +171,9 @@ void *prev_packet;
 void *next_packet;
 } midi_packet_t;
 
-midi_packet_t G_packet_dump_chain;
-uint16_t G_packet_dump_count;
+midi_packet_t *G_mididump_packet_chain;
+uint16_t G_mididump_packet_count;
+uint8_t G_mididump_active;
 
 midi_packet_t *MD_add_packet_to_chain(void *buffer_from, uint32_t packet_len, midi_packet_t *last_packet);
 

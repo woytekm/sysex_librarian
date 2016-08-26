@@ -225,10 +225,62 @@ uint8_t IH_sequencer_app(void)
 
 uint8_t IH_mididump_app(void)
  {
+  uint8_t key_event;
+  uint8_t do_exit, next_app;
+  char *dump_status;
 
-  G_active_app = APP_MIDIDUMP;
+  do_exit = 0;
+  dump_status = malloc(16);
+
+  while(!do_exit)
+   {
+
+    // update main app screen
+
+    LCDclear();
+    IH_set_keymap_bar("CAP","SAV","CLR","OPT");
+    if(G_mididump_active)
+      sprintf(dump_status," DUMP R %3d   ",G_mididump_packet_count);
+    else
+      sprintf(dump_status," DUMP S %3d   ",G_mididump_packet_count);
+
+    IH_set_status_bar(dump_status);
+
+    //sprintf(dump_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
+    //LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
+
+    pthread_mutex_lock(&G_display_lock);
+    LCDdisplay();
+    pthread_mutex_unlock(&G_display_lock);
+
+    SYS_debug(DEBUG_NORMAL,"reading key events");
+
+    read(G_keyboard_event_pipe[0],&key_event,1);
+
+    SYS_debug(DEBUG_NORMAL,"key event: %d",key_event);
+
+    // run main app loop and respond to key events
+
+    switch(key_event)
+     {
+
+      case KEY1:
+       if(G_mididump_active)
+        G_mididump_active = 0;
+       else
+        G_mididump_active = 1;
+       break;
+
+      case ENC_KEY:
+       next_app = IH_choose_app();
+       if(next_app != 0)
+         return next_app;
+       break;
+     }
+   }
 
   return APP_SYSEX_LIBRARIAN;
+
  }
 
 void SYS_hw_interface_thread(void *params)

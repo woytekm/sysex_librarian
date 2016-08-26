@@ -115,6 +115,15 @@ void MIDI_init_MIDI_msg_lenghts(void)
 
      case 0x90:  /* note on */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0x90];
+      
+      if(G_use_iface_hw == 1)
+       if(G_mididump_active)
+        {
+         G_mididump_packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],G_mididump_packet_chain);
+         G_mididump_packet_count++;
+         event_type = KEY_REFRESH_DISPLAY;
+         write(G_keyboard_event_pipe[1],&event_type,1);
+        }
 
       if(midi_in_buffer[at_offset+2] == 0)   /* attack velocity = 0, this is NOTE OFF  */
         SYS_debug(DEBUG_HIGH,"RCV: MIDI note on (off), CH%d, (%x, %x)\n", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
