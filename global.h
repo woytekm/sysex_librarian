@@ -166,7 +166,7 @@ void *next_item;
 typedef struct {
 void *packet_buffer;
 uint32_t packet_len;
-uint16_t packet_no;
+uint16_t packet_id;
 void *prev_packet;
 void *next_packet;
 } midi_packet_t;

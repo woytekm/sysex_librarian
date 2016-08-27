@@ -121,6 +121,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
         {
          G_mididump_packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],G_mididump_packet_chain);
          G_mididump_packet_count++;
+         G_mididump_packet_chain->packet_id = G_mididump_packet_count;
          event_type = KEY_REFRESH_DISPLAY;
          write(G_keyboard_event_pipe[1],&event_type,1);
         }
