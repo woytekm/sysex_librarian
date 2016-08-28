@@ -227,9 +227,11 @@ uint8_t IH_mididump_app(void)
  {
   uint8_t key_event;
   uint8_t do_exit, next_app;
+  uint16_t display_packet_index;
   char *dump_status;
 
   do_exit = 0;
+  display_packet_index = 1;
   dump_status = malloc(16);
 
   while(!do_exit)
@@ -238,13 +240,22 @@ uint8_t IH_mididump_app(void)
     // update main app screen
 
     LCDclear();
-    IH_set_keymap_bar("CAP","SAV","CLR","OPT");
+    if(!G_mididump_active)
+     IH_set_keymap_bar("CAP","DET","CLR","OPT");
+    else
+     IH_set_keymap_bar("STP","DET","CLR","OPT");
+
     if(G_mididump_active)
       sprintf(dump_status," DUMP R %3d   ",G_mididump_packet_count);
     else
       sprintf(dump_status," DUMP S %3d   ",G_mididump_packet_count);
 
     IH_set_status_bar(dump_status);
+
+    if(G_mididump_packet_count > 0)
+     MD_display_packet(12,display_packet_index,G_mididump_packet_chain,TEXT_INVERTED);
+    if((G_mididump_packet_count > 1) && (display_packet_index < G_mididump_packet_count))
+     MD_display_packet(21,display_packet_index+1,G_mididump_packet_chain,TEXT_NORMAL);
 
     //sprintf(dump_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
     //LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
@@ -276,6 +287,29 @@ uint8_t IH_mididump_app(void)
        if(next_app != 0)
          return next_app;
        break;
+
+      case KEY_REFRESH_DISPLAY:
+       if(G_mididump_packet_count > 1)
+        display_packet_index = G_mididump_packet_count - 1;
+       break;
+
+      case KEY3:
+       G_mididump_active = 0;
+       G_mididump_packet_count = 0;
+       display_packet_index = 1;
+       MD_destroy_packet_chain(G_mididump_packet_chain);
+       break;
+
+      case ENC_UP:
+       if(display_packet_index > 1)
+        display_packet_index--;
+       break;
+
+      case ENC_DOWN:
+       if(display_packet_index < G_mididump_packet_count)
+        display_packet_index++;
+       break;
+
      }
    }
 
@@ -364,7 +398,7 @@ uint8_t IH_MIDI_inout_indicator()
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
-    usleep(50000);
+    usleep(90000);
    }
 
  }

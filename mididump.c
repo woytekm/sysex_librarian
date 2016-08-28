@@ -23,6 +23,28 @@ midi_packet_t *MD_add_packet_to_chain(void *buffer_from, uint32_t packet_len, mi
 
  }
 
+int8_t MD_destroy_packet_chain(midi_packet_t *packet_chain)
+ {
+
+  midi_packet_t *curr_packet, *prev_packet;
+
+  if(packet_chain == NULL)
+   return -1;
+
+  curr_packet = packet_chain;
+
+  while(curr_packet != NULL)
+   {
+    free(curr_packet->packet_buffer);
+    prev_packet = curr_packet->prev_packet;
+    free(curr_packet);
+    curr_packet = prev_packet;
+   }
+  
+  return 0;
+
+ }
+
 midi_packet_t *MD_find_packet_in_chain(midi_packet_t *packet_chain, uint16_t packet_id)
  {
   midi_packet_t *packet;
@@ -39,7 +61,7 @@ midi_packet_t *MD_find_packet_in_chain(midi_packet_t *packet_chain, uint16_t pac
   return NULL;
  }
 
-void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *packet_chain)
+void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *packet_chain, uint8_t is_inverted)
  {
   midi_packet_t *packet_to_display;
   uint8_t midi_channel, midi_msgtype;
@@ -67,19 +89,22 @@ void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *p
   switch(midi_msgtype)
    {
      case 0x90:  /* note on */
-     if(packet_to_display->packet_buffer[2] == 0; // note off
+     if(packet_to_display->packet_buffer[2] == 0) // note off
       sprintf(packet_info,"%2d NOTE OFF %2d",midi_channel,packet_to_display->packet_buffer[1]);
      else
-      sprintf(packet_info,"%2d NOTE ON %2d %2d",midi_channel,packet_to_display->packet_buffer[1], packet_to_display->packet_buffer[2]);
-
-     LCDdrawstring(0,display_row,packet_info,TEXT_NORMAL);
-
-     pthread_mutex_lock(&G_display_lock);
-     LCDdisplay();
-     pthread_mutex_unlock(&G_display_lock);
-
+      sprintf(packet_info,"%2d NOTE ON  %2d",midi_channel,packet_to_display->packet_buffer[1]);
      break;
+
    }
+
+ if(is_inverted)
+  LCDdrawstring(0,display_row,packet_info,TEXT_INVERTED);
+ else
+  LCDdrawstring(0,display_row,packet_info,TEXT_NORMAL);
+
+ pthread_mutex_lock(&G_display_lock);
+ LCDdisplay();
+ pthread_mutex_unlock(&G_display_lock);
 
  free(packet_info);
 
