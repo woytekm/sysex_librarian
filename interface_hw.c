@@ -257,9 +257,6 @@ uint8_t IH_mididump_app(void)
     if((G_mididump_packet_count > 1) && (display_packet_index < G_mididump_packet_count))
      MD_display_packet(21,display_packet_index+1,G_mididump_packet_chain,TEXT_NORMAL);
 
-    //sprintf(dump_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
-    //LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
-
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
