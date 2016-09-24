@@ -267,10 +267,7 @@ static unsigned char  font[] = {
 
 void digitalWrite(int8_t pin, int8_t val)
  {
-   if(val == 1)
-    bcm2835_gpio_set(pin);
-   else if(val == 0)
-    bcm2835_gpio_clr(pin);
+  bcm2835_gpio_write(pin,val);
  }
 
 
@@ -286,7 +283,7 @@ void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val)
                         digitalWrite(dataPin, !!(val & (1 << (7 - i))));
 
                 digitalWrite(clockPin, HIGH);
-                //usleep(1);
+                //usleep(40);
                 for (j = CLKCONST_3; j > 0; j--); // clock speed, anyone? (LCD Max CLK input: 4MHz)
                 digitalWrite(clockPin, LOW);
         }

@@ -22,14 +22,9 @@ uint8_t MIDI_write_sysex_buffer(unsigned char *sysex_buffer, uint32_t len)
    if((chunks == 0) && (partial_chunk > 0))
     {
 
-#ifdef IFACE_HW
-     if(G_use_iface_hw == 1)
-      {
-         // tell appropriate thread to signal outgoing MIDI on the display
-         event_type = MIDI_OUT;
-         write(G_MIDI_inout_event_pipe[1],&event_type,1);
-      }
-#endif
+     // tell appropriate thread to signal outgoing MIDI on the display
+     event_type = MIDI_OUT;
+     write(G_MIDI_inout_event_pipe[1],&event_type,1);
 
      write(G_MIDI_fd,sysex_buffer+offset,partial_chunk);
      return 1;
@@ -38,14 +33,9 @@ uint8_t MIDI_write_sysex_buffer(unsigned char *sysex_buffer, uint32_t len)
    for(i=1; i<=chunks; i++)
     {
 
-#ifdef IFACE_HW
-     if(G_use_iface_hw == 1)
-      {
-       // tell appropriate thread to signal outgoing MIDI on the display
-       event_type = MIDI_OUT;
-       write(G_MIDI_inout_event_pipe[1],&event_type,1);
-      }
-#endif
+     // tell appropriate thread to signal outgoing MIDI on the display
+     event_type = MIDI_OUT;
+     write(G_MIDI_inout_event_pipe[1],&event_type,1);
 
      write(G_MIDI_fd,sysex_buffer+offset,SYSEX_CHUNK);
      offset += SYSEX_CHUNK;
@@ -56,14 +46,9 @@ uint8_t MIDI_write_sysex_buffer(unsigned char *sysex_buffer, uint32_t len)
    if(partial_chunk > 0)
     {
 
-#ifdef IFACE_HW
-     if(G_use_iface_hw == 1)
-      {
-       // tell appropriate thread to signal outgoing MIDI on the display
-       event_type = MIDI_OUT;
-       write(G_MIDI_inout_event_pipe[1],&event_type,1);
-      }
-#endif
+     // tell appropriate thread to signal outgoing MIDI on the display
+     event_type = MIDI_OUT;
+     write(G_MIDI_inout_event_pipe[1],&event_type,1);
 
      write(G_MIDI_fd,sysex_buffer+offset,partial_chunk);
      SYS_debug(DEBUG_NORMAL,"SYS: wrote partial chunk %d, (%d bytes)",i,offset+partial_chunk);

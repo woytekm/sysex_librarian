@@ -14,6 +14,7 @@ uint8_t IH_choose_app()
   next_item = IH_scroll_list_item_add(next_item,"ABOUT         ",APP_ABOUT); 
 
   list_return_code = IH_scroll_list(first_item,"Choose app    ");
+  SYS_debug(DEBUG_NORMAL,"Scroll list returned: %d",list_return_code);
   IH_scroll_list_destroy(first_item);
   return list_return_code;
   
@@ -79,7 +80,7 @@ uint8_t IH_about_app(void)
 uint8_t IH_sysex_librarian_app(void)
  {
 
-  uint8_t key_event;
+  uint8_t key_event,lcd_needs_update;
   uint8_t do_exit, next_app, edit_result, file_number;
   uint32_t send_buffer_len;
   char *sysex_save_filename; // max filename len is 16 chars
@@ -90,6 +91,7 @@ uint8_t IH_sysex_librarian_app(void)
   G_active_app = APP_SYSEX_LIBRARIAN;
 
   do_exit = 0;
+  lcd_needs_update = 1;
   sysex_save_filename = malloc(16);
   sysex_msg_info = malloc(16);
 
@@ -98,19 +100,23 @@ uint8_t IH_sysex_librarian_app(void)
 
     // update main app screen
 
-    LCDclear();
-    IH_set_keymap_bar("REC","PLY","SAV","CLR");
-    IH_set_status_bar(" SYSEX LIB    ");
-    if(G_sysex_record_status == 0)
+    if(lcd_needs_update)
+     {
+      LCDclear();
+      IH_set_keymap_bar("REC","PLY","SAV","CLR");
+      IH_set_status_bar(" SYSEX LIB    ");
+      if(G_sysex_record_status == 0)
        LCDdrawstring(0,11,"   rec off", TEXT_NORMAL);
-    else
+      else
        LCDdrawstring(0,11,"   rec on", TEXT_NORMAL);
 
-    sprintf(sysex_msg_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
-    LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
-    pthread_mutex_lock(&G_display_lock);
-    LCDdisplay();
-    pthread_mutex_unlock(&G_display_lock);
+      sprintf(sysex_msg_info," rcv:%2d rec:%2d",G_received_sysex_msg_count,G_saved_sysex_msg_count);
+      LCDdrawstring(0,21,sysex_msg_info, TEXT_NORMAL);
+      pthread_mutex_lock(&G_display_lock);
+      LCDdisplay();
+      pthread_mutex_unlock(&G_display_lock);
+      lcd_needs_update = 0;
+     }
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
 
@@ -134,6 +140,7 @@ uint8_t IH_sysex_librarian_app(void)
          G_sysex_record_status = 1;
        else
          G_sysex_record_status = 0;
+       lcd_needs_update = 1;
        break;
 
       case KEY2:
@@ -166,8 +173,8 @@ uint8_t IH_sysex_librarian_app(void)
             IH_info("file read err");
            }
           free(sysex_play_filename);
-        } 
-       
+        }
+        lcd_needs_update = 1;
        break;
 
       case KEY3:
@@ -191,6 +198,7 @@ uint8_t IH_sysex_librarian_app(void)
             IH_info(" sysex saved");
            }
         }
+        lcd_needs_update = 1;
        break;
 
       case KEY4:
@@ -200,14 +208,15 @@ uint8_t IH_sysex_librarian_app(void)
           SYS_debug(DEBUG_NORMAL,"SYS: sysex buffer discarded");
           G_saved_sysex_msg_count = 0;
          }
+        lcd_needs_update = 1;
        break;
 
      } 
  
-    LCDclear();
-    pthread_mutex_lock(&G_display_lock);
-    LCDdisplay();
-    pthread_mutex_unlock(&G_display_lock);
+    //LCDclear();
+    //pthread_mutex_lock(&G_display_lock);
+    //LCDdisplay();
+    //pthread_mutex_unlock(&G_display_lock);
 
    }
  
@@ -225,11 +234,12 @@ uint8_t IH_sequencer_app(void)
 
 uint8_t IH_mididump_app(void)
  {
-  uint8_t key_event;
+  uint8_t key_event, lcd_needs_update;
   uint8_t do_exit, next_app;
   uint16_t display_packet_index;
   char *dump_status;
 
+  lcd_needs_update = 1;
   do_exit = 0;
   display_packet_index = 1;
   dump_status = malloc(16);
@@ -239,27 +249,31 @@ uint8_t IH_mididump_app(void)
 
     // update main app screen
 
-    LCDclear();
-    if(!G_mididump_active)
-     IH_set_keymap_bar("CAP","DET","CLR","OPT");
-    else
-     IH_set_keymap_bar("STP","DET","CLR","OPT");
+    if(lcd_needs_update)
+     {
+      LCDclear();
+      if(!G_mididump_active)
+       IH_set_keymap_bar("CAP","DET","CLR","OPT");
+      else
+       IH_set_keymap_bar("STP","DET","CLR","OPT");
 
-    if(G_mididump_active)
-      sprintf(dump_status," DUMP R %3d   ",G_mididump_packet_count);
-    else
-      sprintf(dump_status," DUMP S %3d   ",G_mididump_packet_count);
+      if(G_mididump_active)
+        sprintf(dump_status," DUMP R %3d   ",G_mididump_packet_count);
+      else
+        sprintf(dump_status," DUMP S %3d   ",G_mididump_packet_count);
 
-    IH_set_status_bar(dump_status);
+      IH_set_status_bar(dump_status);
 
-    if(G_mididump_packet_count > 0)
-     MD_display_packet(12,display_packet_index,G_mididump_packet_chain,TEXT_INVERTED);
-    if((G_mididump_packet_count > 1) && (display_packet_index < G_mididump_packet_count))
-     MD_display_packet(21,display_packet_index+1,G_mididump_packet_chain,TEXT_NORMAL);
+      if(G_mididump_packet_count > 0)
+       MD_display_packet(12,display_packet_index,G_mididump_packet_chain,TEXT_INVERTED);
+      if((G_mididump_packet_count > 1) && (display_packet_index < G_mididump_packet_count))
+       MD_display_packet(21,display_packet_index+1,G_mididump_packet_chain,TEXT_NORMAL);
 
-    pthread_mutex_lock(&G_display_lock);
-    LCDdisplay();
-    pthread_mutex_unlock(&G_display_lock);
+      pthread_mutex_lock(&G_display_lock);
+      LCDdisplay();
+      pthread_mutex_unlock(&G_display_lock);
+      lcd_needs_update = 0;
+     }
 
     SYS_debug(DEBUG_NORMAL,"reading key events");
 
@@ -277,6 +291,7 @@ uint8_t IH_mididump_app(void)
         G_mididump_active = 0;
        else
         G_mididump_active = 1;
+       lcd_needs_update = 1;
        break;
 
       case ENC_KEY:
@@ -288,6 +303,7 @@ uint8_t IH_mididump_app(void)
       case KEY_REFRESH_DISPLAY:
        if(G_mididump_packet_count > 1)
         display_packet_index = G_mididump_packet_count - 1;
+       lcd_needs_update = 1;
        break;
 
       case KEY3:
@@ -295,16 +311,19 @@ uint8_t IH_mididump_app(void)
        G_mididump_packet_count = 0;
        display_packet_index = 1;
        MD_destroy_packet_chain(G_mididump_packet_chain);
+       lcd_needs_update = 1;
        break;
 
       case ENC_UP:
        if(display_packet_index > 1)
         display_packet_index--;
+       lcd_needs_update = 1;
        break;
 
       case ENC_DOWN:
        if(display_packet_index < G_mididump_packet_count)
         display_packet_index++;
+       lcd_needs_update = 1;
        break;
 
      }
@@ -334,15 +353,19 @@ void SYS_hw_interface_thread(void *params)
 
         case APP_SYSEX_LIBRARIAN:
          next_app = IH_sysex_librarian_app();
+        break;
 
         case APP_SEQUENCER:
          next_app = IH_sequencer_app();
+        break;
 
         case APP_MIDIDUMP:
          next_app = IH_mididump_app();
+        break;
 
         case APP_ABOUT:
          next_app = IH_about_app();
+        break;
 
        }
      
@@ -395,7 +418,7 @@ uint8_t IH_MIDI_inout_indicator()
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
-    usleep(90000);
+    usleep(150000);
    }
 
  }

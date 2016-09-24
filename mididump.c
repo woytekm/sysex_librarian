@@ -89,11 +89,39 @@ void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *p
   switch(midi_msgtype)
    {
      case 0x90:  /* note on */
-     if(packet_to_display->packet_buffer[2] == 0) // note off
-      sprintf(packet_info,"%2d NOTE OFF %2d",midi_channel,packet_to_display->packet_buffer[1]);
-     else
-      sprintf(packet_info,"%2d NOTE ON  %2d",midi_channel,packet_to_display->packet_buffer[1]);
-     break;
+       if(packet_to_display->packet_buffer[2] == 0) // note off
+        sprintf(packet_info,"%2d NOTE OFF %2d",midi_channel,packet_to_display->packet_buffer[1]);
+       else
+        sprintf(packet_info,"%2d NOTE ON  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+
+     case 0x80: /* note off */
+       sprintf(packet_info,"%2d NOTE OFF %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+     
+     case 0xA0:
+       sprintf(packet_info,"%2d AF TOUCH %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+
+     case 0xB0:
+       sprintf(packet_info,"%2d CONTROL  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+
+     case 0xC0:
+       sprintf(packet_info,"%2d PGM CHG  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+
+     case 0xD0:
+       sprintf(packet_info,"%2d AF TOUCH %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+
+     case 0xE0:
+       sprintf(packet_info,"%2d PITCH B  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      break;
+
+     case 0xFF:
+       sprintf(packet_info,"%2d RESET  ",midi_channel);
+      break;
 
    }
 

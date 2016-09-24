@@ -106,15 +106,8 @@ uint8_t G_curses_terminal_on;
 #define PANEL_WIDTH 95
 #define PANEL_HEIGHT 30
 
-WINDOW *G_menu_bar, *G_log_window, *G_border_log_window, *G_status_window, *G_border_status_window;
-
-uint8_t G_log_to_curses;
- 
 uint8_t G_sysex_record_status;
 uint8_t G_write_to_file;
-
-uint8_t G_use_iface_curses;
-uint8_t G_use_iface_hw;
 uint8_t G_global_keymap;
 
 int G_keyboard_event_pipe[2];  // IPC for keyboard/encoder input events

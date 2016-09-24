@@ -5,45 +5,31 @@ void SYS_init(void)
  {
     MIDI_init_MIDI_msg_lenghts();
 
-    G_log_to_curses = 1;
     G_sysex_record_status = 0;
     G_received_sysex_msg_count = 0;
     G_saved_sysex_msg_count = 0;
     G_mididump_packet_chain = NULL;
     G_mididump_packet_count = 0;
 
-#ifdef IFACE_HW
-    if(G_use_iface_hw == 1)
-     {
-      if(!bcm2835_init())
-       {
-        printf("fatal: cannot initialize BCM2835 library!");
-        exit(-1);
-       }  
+    if(!bcm2835_init())
+      {
+       printf("fatal: cannot initialize BCM2835 library!");
+       exit(-1);
+      }  
 
-      // one 74HC165 at these pins:
-      bcm2835_gpio_fsel(GPIO17_PL_PIN11,BCM2835_GPIO_FSEL_OUTP);
-      bcm2835_gpio_fsel(GPIO27_CP_PIN13,BCM2835_GPIO_FSEL_OUTP);
-      bcm2835_gpio_fsel(GPIO22_CE_PIN15,BCM2835_GPIO_FSEL_OUTP);
-      bcm2835_gpio_fsel(GPIO23_Q7_PIN16,BCM2835_GPIO_FSEL_INPT);
+    // one 74HC165 at these pins:
+    bcm2835_gpio_fsel(GPIO17_PL_PIN11,BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(GPIO27_CP_PIN13,BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(GPIO22_CE_PIN15,BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(GPIO23_Q7_PIN16,BCM2835_GPIO_FSEL_INPT);
       
-      LCDInit(60);
-
-     }   
-#endif
-
-#ifdef IFACE_CURSES
-    if(G_use_iface_curses == 1)
-     SYS_init_curses_interface();
-#endif
+    LCDInit(60);
 
  }
 
 void SYS_showhelp(void)
  {
    printf("command line options: \n");
-   printf(" -c : use curses interface \n");
-   printf(" -b : use interface board (hardware) \n");
    printf(" -h : show command line options \n");
  }
 
@@ -56,15 +42,7 @@ void SYS_debug(uint8_t debug_level, char *debug_msg, ...)
    {
     snprintf(message_cr,MAXMSG,"%s\n",debug_msg);
     va_start(ap, debug_msg);
-    if(G_use_iface_curses)
-     {
-      vwprintw(G_log_window, message_cr, ap);
-      wrefresh(G_log_window);
-     }
-    else
-     {
-      vfprintf(stderr, message_cr, ap);
-     }
+    vfprintf(stderr, message_cr, ap);
     va_end(ap);
    }
  }

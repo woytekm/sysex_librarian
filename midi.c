@@ -91,14 +91,8 @@ void MIDI_init_MIDI_msg_lenghts(void)
     if(at_offset >= buflen)   /* end of buffer  */
      return;
 
-#ifdef IFACE_HW
-     // tell appropriate thread to signal incoming MIDI on the display
-     if(G_use_iface_hw == 1)
-      {
-        event_type = MIDI_IN;
-        write(G_MIDI_inout_event_pipe[1],&event_type,1);
-      }
-#endif
+    event_type = MIDI_IN;
+    write(G_MIDI_inout_event_pipe[1],&event_type,1);
 
     if(midi_in_buffer[at_offset] < 240)  /* channel related message - let's split channel number and message type */
      {
@@ -116,8 +110,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
      case 0x90:  /* note on */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0x90];
       
-      if(G_use_iface_hw == 1)
-       if(G_mididump_active)
+      if(G_mididump_active)
         {
          G_mididump_packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],G_mididump_packet_chain);
          G_mididump_packet_count++;
@@ -190,18 +183,11 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(sysex_len == 0)   /* MIDI_get_sysex_len detected incomplete sysex message  - drop it */
        return;
 
-#ifdef IFACE_HW  // refresh display 
-
-      if(G_use_iface_hw)
-       {
-        if(G_active_app == APP_SYSEX_LIBRARIAN)
+      if(G_active_app == APP_SYSEX_LIBRARIAN)
          {
           event_type = KEY_REFRESH_DISPLAY;
           write(G_keyboard_event_pipe[1],&event_type,1);
          }
-       }
-
-#endif
  
       next_message_offset = at_offset + sysex_len;
       break;

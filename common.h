@@ -31,14 +31,6 @@
 /* scheduling  */
 #include <linux/sched.h>
 
-#ifdef IFACE_CURSES
-/* curses */
-#include <ncurses.h>
-#endif
-
-#ifdef IFACE_HW
-
 #include "bcm2835.h"
 
-#endif
 
