@@ -85,8 +85,9 @@ void MIDI_init_MIDI_msg_lenghts(void)
  void MIDI_parse_msgbuffer(unsigned char *midi_in_buffer, uint32_t at_offset, uint32_t buflen)
   {
 
-    uint8_t midi_channel, midi_msgtype, event_type;
+    uint8_t midi_channel, midi_msgtype, event_type, message_ok;
     uint32_t next_message_offset = 0, sysex_len, msg_cnt;
+    uint32_t current_sequencer_ticks;
 
     if(at_offset >= buflen)   /* end of buffer  */
      return;
@@ -105,57 +106,55 @@ void MIDI_init_MIDI_msg_lenghts(void)
       midi_msgtype = midi_in_buffer[at_offset];
      }
 
+    message_ok = 0;
+
     switch(midi_msgtype) {
 
      case 0x90:  /* note on */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0x90];
-      
-      if(G_mididump_active)
-        {
-         G_mididump_packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],G_mididump_packet_chain);
-         G_mididump_packet_count++;
-         G_mididump_packet_chain->packet_id = G_mididump_packet_count;
-         event_type = KEY_REFRESH_DISPLAY;
-         write(G_keyboard_event_pipe[1],&event_type,1);
-        }
-
       if(midi_in_buffer[at_offset+2] == 0)   /* attack velocity = 0, this is NOTE OFF  */
         SYS_debug(DEBUG_HIGH,"RCV: MIDI note on (off), CH%d, (%x, %x)\n", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
       else
         SYS_debug(DEBUG_HIGH,"RCV: MIDI note on, CH%d, (%x, %x)\n", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
-
       if(midi_in_buffer[at_offset+1] > 95 )
        SYS_debug(DEBUG_HIGH,"  invalid MIDI note value %d!\n",midi_in_buffer[at_offset+1]);
+      message_ok = 1;
       break;
 
      case 0x80:  /* note off  */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0x80];
       SYS_debug(DEBUG_HIGH,"RCV: MIDI note off, CH%d, (%x)\n", midi_channel, midi_in_buffer[at_offset+1]);
+      message_ok = 1;
       break;
 
      case 0xA0:  /* aftertouch */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xA0];
       SYS_debug(DEBUG_HIGH,"RCV: aftertouch message\n");
+      message_ok = 1;
       break;
 
      case 0xB0:  /* control change */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xB0];
       SYS_debug(DEBUG_HIGH,"RCV: control change message\n");
+      message_ok = 1;
       break;
 
      case 0xC0: /* program change */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xC0];
       SYS_debug(DEBUG_HIGH,"RCV: program change message\n");
+      message_ok = 1;
       break;
 
      case 0xD0: /* aftertouch */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xD0];
       SYS_debug(DEBUG_HIGH,"RCV: MIDI aftertouch message\n");
+      message_ok = 1;
       break;
 
      case 0xE0: /* pitchbend */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xE0];
       SYS_debug(DEBUG_HIGH,"RCV: MIDI pitchbend message\n");
+      message_ok = 1;
       break;
 
      case 0xF0:  /* sysex */
@@ -190,6 +189,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
          }
  
       next_message_offset = at_offset + sysex_len;
+      message_ok = 1;
       break;
 
      case 0xF8: /* MIDI clock */
@@ -202,10 +202,10 @@ void MIDI_init_MIDI_msg_lenghts(void)
       /* do not log this as it would overwhelm the program - too many msgs */
       break;
 
-
      case 0xFF: /* MIDI reset */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xFF];
       SYS_debug(DEBUG_HIGH,"RCV: general MIDI reset message\n");
+      message_ok = 1;
       break;
 
      default:
@@ -220,6 +220,21 @@ void MIDI_init_MIDI_msg_lenghts(void)
         return;    
        }
 
+   }
+
+  if(G_mididump_active && message_ok)
+   {
+     current_sequencer_ticks = G_sequencer_ticks;
+     if(midi_msgtype != 0xF0)
+       G_mididump_packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],G_mididump_packet_chain);
+     else
+       G_mididump_packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],sysex_len,G_mididump_packet_chain);
+     G_mididump_packet_count++;
+     G_mididump_packet_chain->packet_id = G_mididump_packet_count;
+     G_mididump_packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;  // calculate delta
+     G_last_sequencer_event_time = current_sequencer_ticks;
+     event_type = KEY_REFRESH_DISPLAY;
+     write(G_keyboard_event_pipe[1],&event_type,1);
    }
 
    MIDI_parse_msgbuffer(midi_in_buffer, next_message_offset, buflen);

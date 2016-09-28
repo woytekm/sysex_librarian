@@ -53,6 +53,7 @@
 #define TASK_GPIO_LED 5
 #define TASK_INTERFACE_HW 6
 #define TASK_MIDI_INOUT_INDICATOR 7
+#define TASK_MIDI_IN_TIMER 8
 
 #define DEBUG_NORMAL 2
 #define DEBUG_HIGH 3
@@ -100,6 +101,7 @@ void MIDI_IN_thread(void *params);
 void SYS_keyboard_thread(void *params);
 void SYS_shiftin_thread(void *params);
 void SYS_hw_interface_thread(void *params);
+void SYS_MIDI_IN_timer(void *params);
 
 uint8_t G_curses_terminal_on;
 
@@ -119,6 +121,8 @@ int G_MIDI_inout_event_pipe[2];  // IPC for keyboard/encoder input events
 #define GPIO27_CP_PIN13 RPI_V2_GPIO_P1_13
 #define GPIO22_CE_PIN15 RPI_V2_GPIO_P1_15
 #define GPIO23_Q7_PIN16 RPI_V2_GPIO_P1_16
+
+#define GPIO04_LED_PIN07 RPI_V2_GPIO_P1_07
 
 #define DIN1  RPI_V2_GPIO_P1_35
 #define SCLK1 RPI_V2_GPIO_P1_37
@@ -158,6 +162,7 @@ void *next_item;
 
 typedef struct {
 unsigned char *packet_buffer;
+uint32_t arrival_time;
 uint32_t packet_len;
 uint16_t packet_id;
 void *prev_packet;
@@ -180,6 +185,23 @@ uint8_t IH_MIDI_inout_indicator();
 pthread_mutex_t G_display_lock;
 
 uint8_t G_active_app;
+
+#define TICK_INTERNAL_DELAY 70 // 70 microseconds of system delay for usleep() calls
+
+#define TIMER_START 10
+#define TIMER_STOP  20
+#define TIMER_RESET 30
+
+
+uint8_t G_sequencer_state;
+uint8_t G_MIDI_IN_timer_command_pipe[2];
+ 
+uint32_t G_sequencer_ticks; // uint32_t allows for more than 24 hour recording time with 200BPM tempo
+uint32_t G_last_sequencer_event_time;
+uint32_t G_sequencer_tick_interval; // in microseconds
+uint32_t G_sequencer_PPQN;          // pulses per quarter note – I will aim for 192PPQN
+uint32_t G_sequencer_BPM;
+
 
 // end of global.h
 

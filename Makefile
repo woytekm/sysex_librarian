@@ -1,7 +1,7 @@
 
 MAKE     = make
 CC       = gcc
-CFLAGS   = -g -O2 -Wall -Wno-implicit-function-declaration -Wno-unused-variable -D_GNU_SOURCE
+CFLAGS   = -g -O2 -Wall -pedantic -Wno-implicit-function-declaration -Wno-unused-variable -D_GNU_SOURCE -std=c11 
 LIBS     = -lpthread -lncurses -lbcm2835
 PROGNAME = midicube
 
@@ -18,8 +18,9 @@ all:
 	$(CC) $(CFLAGS) interface_hw_lib.c -c $(INCLUDES)
 	$(CC) $(CFLAGS) PCD8544.c -c $(INCLUDES)
 	$(CC) $(CFLAGS) user_input.c -c $(INCLUDES)
+	$(CC) $(CFLAGS) sequencer.c -c $(INCLUDES)
 	$(CC) $(CFLAGS) main.c -c  $(INCLUDES)
-	$(CC) $(CFLAGS) main.o init.o midi.o midi_in.o midi_out.o mididump.o misc.o interface_hw.o interface_hw_lib.o user_input.o PCD8544.o -o $(PROGNAME) $(LIBS)
+	$(CC) $(CFLAGS) main.o init.o midi.o midi_in.o midi_out.o mididump.o misc.o interface_hw.o interface_hw_lib.o user_input.o sequencer.o PCD8544.o -o $(PROGNAME) $(LIBS)
 
 clean:
 	rm -f *.o *.a $(PROGNAME)

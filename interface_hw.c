@@ -235,6 +235,7 @@ uint8_t IH_sequencer_app(void)
 uint8_t IH_mididump_app(void)
  {
   uint8_t key_event, lcd_needs_update;
+  uint8_t timer_command;
   uint8_t do_exit, next_app;
   uint16_t display_packet_index;
   char *dump_status;
@@ -288,9 +289,18 @@ uint8_t IH_mididump_app(void)
 
       case KEY1:
        if(G_mididump_active)
-        G_mididump_active = 0;
+        {
+          G_mididump_active = 0;
+          timer_command = TIMER_STOP;
+          write(G_MIDI_IN_timer_command_pipe[1],&timer_command,1);
+        }
        else
-        G_mididump_active = 1;
+        {
+          G_mididump_active = 1;
+          timer_command = TIMER_START;
+          write(G_MIDI_IN_timer_command_pipe[1],&timer_command,1);
+        }
+
        lcd_needs_update = 1;
        break;
 
@@ -310,6 +320,8 @@ uint8_t IH_mididump_app(void)
        G_mididump_active = 0;
        G_mididump_packet_count = 0;
        display_packet_index = 1;
+       timer_command = TIMER_RESET;
+       write(G_MIDI_IN_timer_command_pipe[1],&timer_command,1);
        MD_destroy_packet_chain(G_mididump_packet_chain);
        lcd_needs_update = 1;
        break;
