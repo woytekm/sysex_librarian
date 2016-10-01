@@ -1,7 +1,7 @@
 
 MAKE     = make
 CC       = gcc
-CFLAGS   = -g -O2 -Wall -pedantic -Wno-implicit-function-declaration -Wno-unused-variable -D_GNU_SOURCE -std=c11 
+CFLAGS   = -g -O2 -Wall -pedantic -Wno-implicit-function-declaration -Wno-unused-variable -D_GNU_SOURCE -std=c11
 LIBS     = -lpthread -lncurses -lbcm2835
 PROGNAME = midicube
 

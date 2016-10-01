@@ -227,7 +227,66 @@ uint8_t IH_sysex_librarian_app(void)
 uint8_t IH_sequencer_app(void)
  {
 
+   uint8_t lcd_needs_update;
+   uint8_t do_exit;
+   uint8_t key_event, next_app;
+
+   lcd_needs_update = 1;
+   do_exit = 0;
+
    G_active_app = APP_SEQUENCER;
+
+   G_sequencer_state = SEQUENCER_STOP;
+
+   while(!do_exit)
+    {
+      if(lcd_needs_update)
+       {
+         LCDclear();
+
+         IH_set_keymap_bar("REC","PLY","EDT","CNF");
+          
+         IH_set_status_bar(" SEQUENCER   ");
+         pthread_mutex_lock(&G_display_lock);
+         LCDdisplay();
+         pthread_mutex_unlock(&G_display_lock);
+         lcd_needs_update = 0;
+      }
+
+    SYS_debug(DEBUG_NORMAL,"reading key events");
+
+    read(G_keyboard_event_pipe[0],&key_event,1);
+
+    SYS_debug(DEBUG_NORMAL,"key event: %d",key_event);
+
+    switch(key_event)
+     {
+
+      case KEY1:
+       SEQ_sequencer_record();
+       break;
+    
+      case KEY2:
+       SEQ_sequencer_play();
+       break;
+
+      case KEY3:
+       SEQ_sequencer_edit_part();
+       break;
+
+      case KEY4:
+       SEQ_sequencer_setup();
+       break;
+
+      case ENC_KEY:
+       next_app = IH_choose_app();
+       if(next_app != 0)
+         return next_app;
+       break;     
+
+     }
+
+   }
 
    return APP_SYSEX_LIBRARIAN;
  }
@@ -239,6 +298,7 @@ uint8_t IH_mididump_app(void)
   uint8_t do_exit, next_app;
   uint16_t display_packet_index;
   char *dump_status;
+  int error;
 
   lcd_needs_update = 1;
   do_exit = 0;

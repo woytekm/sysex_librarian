@@ -192,14 +192,45 @@ uint8_t G_active_app;
 #define TIMER_STOP  20
 #define TIMER_RESET 30
 
+#define SEQUENCER_RECORDING 10
+#define SEQUENCER_REC_STOP  15
+#define SEQUENCER_REC_PAUSE 16
+#define SEQUENCER_PLAYING   20
+#define SEQUENCER_STOP      30
+#define SEQUENCER_EDIT_PART 40
+#define SEQUENCER_EDIT_GLOBAL 50
+#define SEQUENCER_CONFIG    60
 
+// 8 tracks 256 parts max on eatch track, each part can be repeated infinite number of times during the track run
+
+#define MAX_TRACKS 8
+#define MAX_PARTS_PER_TRACK 256
+
+typedef struct {
+uint8_t part_number;
+uint32_t start_time; // in PPQN ticks
+uint32_t end_time;   // in PPQN ticks
+uint16_t event_count;
+uint16_t repeats;
+midi_packet_t *packet_chain;
+} sequencer_part_t;
+
+typedef struct {
+uint8_t track_number;
+sequencer_part_t parts[MAX_PARTS_PER_TRACK];
+} sequencer_track_t;
+
+sequencer_track_t G_sequencer_tracks[MAX_TRACKS];
+
+uint8_t G_current_track;
+uint8_t G_current_part;
 uint8_t G_sequencer_state;
-uint8_t G_MIDI_IN_timer_command_pipe[2];
+int G_MIDI_IN_timer_command_pipe[2];
  
-uint32_t G_sequencer_ticks; // uint32_t allows for more than 24 hour recording time with 200BPM tempo
+uint32_t G_sequencer_ticks;            // uint32_t allows for more than 24 hour recording time with 200BPM tempo
 uint32_t G_last_sequencer_event_time;
-uint32_t G_sequencer_tick_interval; // in microseconds
-uint32_t G_sequencer_PPQN;          // pulses per quarter note – I will aim for 192PPQN
+uint32_t G_sequencer_tick_interval;    // in microseconds
+uint32_t G_sequencer_PPQN;             // pulses per quarter note – I will aim for 192PPQN
 uint32_t G_sequencer_BPM;
 
 

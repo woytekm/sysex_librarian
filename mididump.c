@@ -86,8 +86,6 @@ void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *p
      midi_msgtype = packet_to_display->packet_buffer[0];
     }
 
-  SYS_debug(DEBUG_NORMAL,"mididump: received packet type: %2H",midi_msgtype);
-
   switch(midi_msgtype)
    {
      case 0x90:  /* note on */
