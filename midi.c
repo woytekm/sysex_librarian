@@ -31,7 +31,7 @@ uint8_t MIDI_is_partial_message(unsigned char *buffer, uint32_t len)
   while(!finished)
    {
      if(buffer[buffer_position] < 240)  /* channel related message - let's split channel number and message type */
-       midi_msgtype = buffer[buffer_position] & 0b11110000;
+       midi_msgtype = buffer[buffer_position] & 240; // 240 = 0b11110000
      else   /* message = 0b1111nnnn  - system common message or realtime message */
        midi_msgtype = buffer[buffer_position];
 
@@ -60,24 +60,24 @@ uint8_t MIDI_is_partial_message(unsigned char *buffer, uint32_t len)
 
 void MIDI_init_MIDI_msg_lenghts(void)
  {
-
-  G_MIDI_msg_lengths[0b10000000] = 3;   /* note off    */
-  G_MIDI_msg_lengths[0b10010000] = 3;   /* note on     */
-  G_MIDI_msg_lengths[0b10100000] = 3;   /* aftertouch  */
-  G_MIDI_msg_lengths[0b10110000] = 3;   /* control change */
-  G_MIDI_msg_lengths[0b11000000] = 2;   /* pgm change  */
-  G_MIDI_msg_lengths[0b11010000] = 2;   /* aftertouch  */
-  G_MIDI_msg_lengths[0b11100000] = 3;   /* pitch bend  */
-  G_MIDI_msg_lengths[0b11110000] = 0;   /* sysex - undefined */
-  G_MIDI_msg_lengths[0b11111000] = 1;   /* MIDI clock */
-  G_MIDI_msg_lengths[0b11110001] = 1;   /* various common system/realtime messages: */
-  G_MIDI_msg_lengths[0b11110010] = 1;
-  G_MIDI_msg_lengths[0b11110011] = 1;
-  G_MIDI_msg_lengths[0b11110110] = 1;
-  G_MIDI_msg_lengths[0b11111010] = 1;
-  G_MIDI_msg_lengths[0b11111011] = 1;
-  G_MIDI_msg_lengths[0b11111110] = 1;
-  G_MIDI_msg_lengths[0b11111111] = 1;   /* MIDI reset */
+ 
+  G_MIDI_msg_lengths[0x80] = 3;   /* 0b10000000 note off    */
+  G_MIDI_msg_lengths[0x90] = 3;   /* 0b10010000 note on     */
+  G_MIDI_msg_lengths[0xA0] = 3;   /* 0b10100000 aftertouch  */
+  G_MIDI_msg_lengths[0xB0] = 3;   /* 0b10110000 control change */
+  G_MIDI_msg_lengths[0xC0] = 2;   /* 0b11000000 pgm change  */
+  G_MIDI_msg_lengths[0xD0] = 2;   /* aftertouch  */
+  G_MIDI_msg_lengths[0xE0] = 3;   /* pitch bend  */
+  G_MIDI_msg_lengths[0xF0] = 0;   /* sysex - undefined */
+  G_MIDI_msg_lengths[0xF8] = 1;   /* MIDI clock */
+  G_MIDI_msg_lengths[0xF1] = 1;   /* various common system/realtime messages: */
+  G_MIDI_msg_lengths[0xF2] = 1;
+  G_MIDI_msg_lengths[0xF3] = 1;
+  G_MIDI_msg_lengths[0xF6] = 1;
+  G_MIDI_msg_lengths[0xFA] = 1;
+  G_MIDI_msg_lengths[0xFB] = 1;
+  G_MIDI_msg_lengths[0xFE] = 1;
+  G_MIDI_msg_lengths[0xFF] = 1;   /* MIDI reset */
 
  }
 
@@ -97,8 +97,8 @@ void MIDI_init_MIDI_msg_lenghts(void)
 
     if(midi_in_buffer[at_offset] < 240)  /* channel related message - let's split channel number and message type */
      {
-      midi_channel = (midi_in_buffer[at_offset] & 0b00001111) + 1;  /* channel ID in MIDI messages starts from 0  */
-      midi_msgtype = midi_in_buffer[at_offset] & 0b11110000;
+      midi_channel = (midi_in_buffer[at_offset] & 0x0F) + 1;  /* channel ID in MIDI messages starts from 0  */
+      midi_msgtype = midi_in_buffer[at_offset] & 0xF0;
      }
     else   /* message = 0b1111nnnn  - system common message or realtime message */
      {
@@ -107,6 +107,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
      }
 
     message_ok = 0;
+    sysex_len = 0;
 
     switch(midi_msgtype) {
 
@@ -235,6 +236,22 @@ void MIDI_init_MIDI_msg_lenghts(void)
      G_last_sequencer_event_time = current_sequencer_ticks;
      event_type = KEY_REFRESH_DISPLAY;
      write(G_keyboard_event_pipe[1],&event_type,1);
+   }
+  else if(G_sequencer_state == SEQUENCER_RECORDING)
+   {
+    current_sequencer_ticks = G_sequencer_ticks;
+    if(midi_msgtype != 0xF0)
+      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],
+                                                                                                       G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
+    else
+      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],sysex_len,
+                                                                                                       G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
+    G_sequencer_tracks[G_current_track].parts[G_current_part].event_count++;
+    G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_id = G_sequencer_tracks[G_current_track].parts[G_current_part].event_count;
+    G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;
+    G_last_sequencer_event_time = current_sequencer_ticks;
+    event_type = KEY_REFRESH_DISPLAY;
+    write(G_keyboard_event_pipe[1],&event_type,1);
    }
 
    MIDI_parse_msgbuffer(midi_in_buffer, next_message_offset, buflen);

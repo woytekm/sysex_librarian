@@ -74,11 +74,12 @@ void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *p
   LCDdrawstring(0,display_row,"              ",TEXT_NORMAL);
 
   packet_to_display = MD_find_packet_in_chain(packet_chain, packet_id);
-
+ 
+  
   if(packet_to_display->packet_buffer[0] < 240)  /* channel related message - let's split channel number and message type */
     {
-     midi_channel = (packet_to_display->packet_buffer[0] & 0b00001111) + 1;  /* channel ID in MIDI messages starts from 0  */
-     midi_msgtype = packet_to_display->packet_buffer[0] & 0b11110000;
+     midi_channel = (packet_to_display->packet_buffer[0] & 0x0F) + 1;  /* 15 = 0b00001111, channel ID in MIDI messages starts from 0  */
+     midi_msgtype = packet_to_display->packet_buffer[0] & 0xF0; // 240 = 0b11110000
     }
    else   /* message = 0b1111nnnn  - system common message or realtime message */
     {

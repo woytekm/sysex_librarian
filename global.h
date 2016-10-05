@@ -217,7 +217,9 @@ midi_packet_t *packet_chain;
 
 typedef struct {
 uint8_t track_number;
+uint8_t MIDI_channel;
 sequencer_part_t parts[MAX_PARTS_PER_TRACK];
+uint8_t part_count;
 } sequencer_track_t;
 
 sequencer_track_t G_sequencer_tracks[MAX_TRACKS];

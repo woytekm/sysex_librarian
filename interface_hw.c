@@ -263,7 +263,9 @@ uint8_t IH_sequencer_app(void)
      {
 
       case KEY1:
+       G_sequencer_state = SEQUENCER_REC_STOP;
        SEQ_sequencer_record();
+       lcd_needs_update = 1;
        break;
     
       case KEY2:
