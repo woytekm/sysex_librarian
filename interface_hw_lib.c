@@ -87,7 +87,7 @@ char *IH_get_file_name_from_code(uint8_t code, scroll_list_item_t *first_item)
 
   curr_item = first_item;
 
-  while(curr_item->next_item != NULL)
+  while(curr_item != NULL)
    {
     if(curr_item->item_code == code)
      {
@@ -114,6 +114,7 @@ scroll_list_item_t *IH_get_file_list(char *directory)
    scroll_list_item_t *first_item;
    scroll_list_item_t *next_item;
    scroll_list_item_t *prev_item;
+   char *filename;
 
    first_item = NULL;
    item_counter = 1;
@@ -125,24 +126,40 @@ scroll_list_item_t *IH_get_file_list(char *directory)
     {
       while ((dir = readdir(d)) != NULL)
       {
-       if( (strcmp(dir->d_name,".") != 0) && (strcmp(dir->d_name,"..") != 0)  && (dir->d_type == DT_REG) )
+       if( ((dir->d_type == DT_REG) || (dir->d_type == DT_DIR)) && (strcmp(dir->d_name,".")!= 0) )
         {
+         filename = NULL;
+         if(dir->d_type == DT_REG)
+          filename = strdup(dir->d_name);
+         else if(dir->d_type == DT_DIR)
+          {
+           filename = malloc(strlen(dir->d_name)+2);
+           filename[0] = '/';
+           filename[1] = 0x0;
+           strcat(filename,dir->d_name);
+          }
+         
          if(first)
           { 
-           first_item = IH_scroll_list_item_add(NULL,dir->d_name,item_counter);
+           first_item = IH_scroll_list_item_add(NULL,filename,item_counter);
            prev_item = first_item;
            first = 0;
           }
          else
           {
-           next_item = IH_scroll_list_item_add(prev_item,dir->d_name,item_counter);
+           next_item = IH_scroll_list_item_add(prev_item,filename,item_counter);
            prev_item = next_item;
           }
+
+        if(filename != NULL)
+         free(filename);
+
         item_counter++;
        }
       }
 
     closedir(d);
+
     }
    else
     {
@@ -179,6 +196,38 @@ void IH_info(char *info_message)
     }
 
  }
+
+uint8_t IH_yesno_dialog(char *dialog_message)
+ {
+   uint8_t do_exit, key_event;
+
+   do_exit = 0;
+
+   LCDclear();
+   IH_set_status_bar(" Question     ");
+   IH_set_keymap_bar("YES","   ","   ","NO ");
+
+   LCDdrawstring(0,17,dialog_message,TEXT_NORMAL);
+   pthread_mutex_lock(&G_display_lock);
+   LCDdisplay();
+   pthread_mutex_unlock(&G_display_lock);
+
+   while(!do_exit)
+    {
+     read(G_keyboard_event_pipe[0],&key_event,1);
+     switch(key_event)
+       {
+        case KEY1:
+         return 1;
+        case KEY4:
+         return 0;
+       }
+    }
+
+  return 0;
+
+ }
+
 
 void IH_quick_info(char *info_message)
  {
@@ -288,7 +337,7 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
    LCDclear();
 
    IH_set_status_bar(list_title);
-   IH_set_keymap_bar("","","","ESC");
+   IH_set_keymap_bar("OK ","   ","   ","ESC");
 
    while(!do_exit)
     {
@@ -318,6 +367,9 @@ uint8_t IH_scroll_list(scroll_list_item_t *item_list_first_item, char *list_titl
         case ENC_KEY:
             do_exit = 1;
             break; 
+        case KEY1:
+            do_exit = 1;
+            break;
         case ENC_UP:
             if(curr_item->next_item != NULL)
              curr_item = curr_item->next_item;

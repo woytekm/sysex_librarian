@@ -13,12 +13,20 @@ void SYS_init(void)
 
     G_sequencer_PPQN = 192;
     G_sequencer_BPM = 120;
+    
+    G_current_track = 1;
+    G_current_part = 1;
+
+    SEQ_init_tracks_and_parts();
 
     if(!bcm2835_init())
       {
        printf("fatal: cannot initialize BCM2835 library!");
        exit(-1);
       }
+
+    // metronome/record LED at this pin
+    bcm2835_gpio_fsel(RPI_V2_GPIO_P1_07,BCM2835_GPIO_FSEL_OUTP);
 
     // one 74HC165 at these pins:
     bcm2835_gpio_fsel(GPIO17_PL_PIN11,BCM2835_GPIO_FSEL_OUTP);

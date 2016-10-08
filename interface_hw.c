@@ -81,18 +81,23 @@ uint8_t IH_sysex_librarian_app(void)
  {
 
   uint8_t key_event,lcd_needs_update;
-  uint8_t do_exit, next_app, edit_result, file_number;
+  uint8_t do_exit, next_app, edit_result, file_number, file_chosen;
   uint32_t send_buffer_len;
   char *sysex_save_filename; // max filename len is 16 chars
-  char *sysex_play_filename;
+  char *filename_to_play;
+  char *dirname;
   char *sysex_msg_info;
+  char cwd[]= ".";
   scroll_list_item_t *file_list;
 
   G_active_app = APP_SYSEX_LIBRARIAN;
 
   do_exit = 0;
+  file_chosen = 0;
+  file_number = 0;
   lcd_needs_update = 1;
   sysex_save_filename = malloc(16);
+  filename_to_play = NULL;
   sysex_msg_info = malloc(16);
 
   while(!do_exit)
@@ -144,21 +149,52 @@ uint8_t IH_sysex_librarian_app(void)
        break;
 
       case KEY2:
-       file_list = IH_get_file_list(DEFAULT_SYSEX_DIR);
-       if(file_list == NULL)
+       file_chosen = 0;
+       chdir(DEFAULT_SYSEX_DIR);
+
+       while(!file_chosen)
         {
-         IH_info("no files");
-         break;
+          file_list = IH_get_file_list(cwd);
+
+          if(file_list == NULL)
+           {
+            IH_info("no files");
+            lcd_needs_update = 1;
+            break;
+           }
+
+          file_number = IH_scroll_list(file_list,"Choose file   ");
+
+          if(file_number>0)
+           {
+             filename_to_play = IH_get_file_name_from_code(file_number,file_list);
+           }
+          else
+           {
+            lcd_needs_update = 1;
+            break;
+           }
+
+          if(filename_to_play[0] == '/')
+           {
+             dirname = malloc(strlen(filename_to_play)-1);
+             memcpy(dirname,filename_to_play+1,strlen(filename_to_play));
+             chdir(dirname);
+             free(dirname);
+           }
+          else
+           file_chosen = 1;
         }
-       file_number = IH_scroll_list(file_list,"Choose file   ");
-       if(file_number>0)
-        {
-          sysex_play_filename = IH_get_file_name_from_code(file_number,file_list);
-          if(sysex_play_filename == NULL)
-           break;
-          chdir(DEFAULT_SYSEX_DIR);
-          send_buffer_len = SYS_read_sysex_buffer_from_file(sysex_play_filename,&G_sysex_transmit_buffer);
-          if(send_buffer_len > 0)
+
+        if((filename_to_play == NULL) || (file_number == 0))
+         {
+          lcd_needs_update = 1;
+          break;
+         }
+
+        send_buffer_len = SYS_read_sysex_buffer_from_file(filename_to_play,&G_sysex_transmit_buffer);
+
+        if(send_buffer_len > 0)
            {
             LCDclear();
             IH_set_status_bar(" SYSEX SEND  ");
@@ -172,8 +208,8 @@ uint8_t IH_sysex_librarian_app(void)
             SYS_debug("SYS: read sysex file failed. Nothing sent to MIDI OUT.");
             IH_info("file read err");
            }
-          free(sysex_play_filename);
-        }
+        free(filename_to_play);
+
         lcd_needs_update = 1;
        break;
 
@@ -245,8 +281,8 @@ uint8_t IH_sequencer_app(void)
          LCDclear();
 
          IH_set_keymap_bar("REC","PLY","EDT","CNF");
-          
-         IH_set_status_bar(" SEQUENCER   ");
+         IH_set_status_bar(" SEQUENCER    ");
+
          pthread_mutex_lock(&G_display_lock);
          LCDdisplay();
          pthread_mutex_unlock(&G_display_lock);
@@ -385,6 +421,7 @@ uint8_t IH_mididump_app(void)
        timer_command = TIMER_RESET;
        write(G_MIDI_IN_timer_command_pipe[1],&timer_command,1);
        MD_destroy_packet_chain(G_mididump_packet_chain);
+       G_mididump_packet_chain = NULL;
        lcd_needs_update = 1;
        break;
 

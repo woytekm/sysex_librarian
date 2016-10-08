@@ -203,8 +203,8 @@ uint8_t G_active_app;
 
 // 8 tracks 256 parts max on eatch track, each part can be repeated infinite number of times during the track run
 
-#define MAX_TRACKS 8
-#define MAX_PARTS_PER_TRACK 256
+#define MAX_TRACKS 9
+#define MAX_PARTS_PER_TRACK 254
 
 typedef struct {
 uint8_t part_number;
