@@ -278,7 +278,7 @@ void SEQ_sequencer_record()
          sprintf(track_part_info,"T:%d/P:%2d/E:%3d",G_current_track,G_current_part,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count);
          LCDdrawstring(0,11,track_part_info, TEXT_NORMAL);
        }
-      else if(G_sequencer_state == SEQUENCER_REC_PAUSE)
+      else if(G_sequencer_state == SEQUENCER_REC_PAUSED)
        {
          IH_set_keymap_bar("REC","   ","   ","EXI");
          sprintf(seq_status," SEQ PSE      ");
@@ -389,7 +389,7 @@ void SEQ_sequencer_record()
 
       case KEY4:
        if((G_sequencer_state == SEQUENCER_RECORDING) || 
-          (G_sequencer_state == SEQUENCER_REC_PAUSE) )
+          (G_sequencer_state == SEQUENCER_REC_PAUSED) )
         G_sequencer_state = SEQUENCER_REC_STOP;
        return;
       break;
@@ -406,7 +406,74 @@ void SEQ_sequencer_record()
 }
 
 void SEQ_sequencer_play()
- {}
+ {
+  uint8_t key_event, lcd_needs_update;
+  uint8_t timer_command;
+  uint8_t do_exit, next_app;
+  char seq_status[20];
+
+  lcd_needs_update = 1;
+  do_exit = 0;
+
+  G_sequencer_state = SEQUENCER_PLAY_STOP;
+
+  while(!do_exit)
+   {
+
+    if(lcd_needs_update)
+     {
+      LCDclear();
+
+      if(G_sequencer_state == SEQUENCER_PLAYING)
+       {
+         IH_set_keymap_bar("STP","PSE","   ","   ");
+         sprintf(seq_status," SEQ PLAYING ");
+       }
+      else if(G_sequencer_state == SEQUENCER_PLAY_PAUSED)
+       {
+         IH_set_keymap_bar("PLY","   ","   ","EXI");
+         sprintf(seq_status," SEQ PSE      ");
+       }
+      else if(G_sequencer_state == SEQUENCER_PLAY_STOP)
+       {
+         IH_set_keymap_bar("PLY","SET","DEL","EXI");
+         sprintf(seq_status," SEQ PLAY STOP");
+       }
+      pthread_mutex_lock(&G_display_lock);
+      LCDdisplay();
+      pthread_mutex_unlock(&G_display_lock);
+      lcd_needs_update = 0;
+     }
+
+  SYS_debug(DEBUG_NORMAL,"SEQ REC reading key events");
+
+  read(G_keyboard_event_pipe[0],&key_event,1);
+
+  SYS_debug(DEBUG_NORMAL,"key event: %d",key_event);
+  switch(key_event)
+    {
+
+      case KEY1:
+       break;
+
+      case KEY2:
+       break;
+
+      case KEY3:
+       break;
+
+      case KEY4:
+       if((G_sequencer_state == SEQUENCER_PLAYING) ||
+          (G_sequencer_state == SEQUENCER_PLAY_PAUSED) )
+        G_sequencer_state = SEQUENCER_PLAY_STOP;
+       return;
+      break;
+
+    }
+
+  }
+
+ }
 
 void SEQ_sequencer_edit_part()
  {}

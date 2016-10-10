@@ -192,14 +192,16 @@ uint8_t G_active_app;
 #define TIMER_STOP  20
 #define TIMER_RESET 30
 
-#define SEQUENCER_RECORDING 10
-#define SEQUENCER_REC_STOP  15
-#define SEQUENCER_REC_PAUSE 16
-#define SEQUENCER_PLAYING   20
-#define SEQUENCER_STOP      30
-#define SEQUENCER_EDIT_PART 40
+#define SEQUENCER_RECORDING   10
+#define SEQUENCER_REC_STOP    15
+#define SEQUENCER_REC_PAUSED   16
+#define SEQUENCER_PLAYING     20
+#define SEQUENCER_PLAY_PAUSED  21
+#define SEQUENCER_PLAY_STOP   22
+#define SEQUENCER_STOP        30
+#define SEQUENCER_EDIT_PART   40
 #define SEQUENCER_EDIT_GLOBAL 50
-#define SEQUENCER_CONFIG    60
+#define SEQUENCER_CONFIG      60
 
 // 8 tracks 256 parts max on eatch track, each part can be repeated infinite number of times during the track run
 

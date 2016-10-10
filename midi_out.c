@@ -57,3 +57,17 @@ uint8_t MIDI_write_sysex_buffer(unsigned char *sysex_buffer, uint32_t len)
    return 1;
 
  }
+
+uint8_t MIDI_write_short_event(midi_packet_t *event)
+ {
+     
+     uint8_t event_type = MIDI_OUT;
+
+     write(G_MIDI_inout_event_pipe[1],&event_type,1);
+     if( write(G_MIDI_fd,event->packet_buffer,event->packet_len) < 0 )
+      return 0;
+     else
+      return 1;
+ }
+
+
