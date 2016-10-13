@@ -246,6 +246,10 @@ void MIDI_init_MIDI_msg_lenghts(void)
     else
       G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],sysex_len,
                                                                                                        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
+
+    if(G_sequencer_tracks[G_current_track].parts[G_current_part].event_count == 0)
+     G_sequencer_tracks[G_current_track].parts[G_current_part].first_packet = G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain;
+
     G_sequencer_tracks[G_current_track].parts[G_current_part].event_count++;
     G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_id = G_sequencer_tracks[G_current_track].parts[G_current_part].event_count;
     G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;

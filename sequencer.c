@@ -1,6 +1,75 @@
 #include "common.h"
 #include "global.h"
 
+void SEQ_player(void *param)
+ {
+
+   uint8_t event_type, i;
+   int flags, error;
+   pipe(G_sequencer_player_command_pipe);
+
+   midi_packet_t *current_packet_in_part[MAX_TRACKS];
+   uint8_t        current_part_in_track[MAX_TRACKS];
+
+   while(1)
+    {
+       flags = fcntl(G_sequencer_player_command_pipe[0], F_GETFL, 0);
+       flags &= ~O_NONBLOCK;
+       fcntl(G_MIDI_IN_timer_command_pipe[0], F_SETFL, flags);
+       read(G_MIDI_IN_timer_command_pipe[0],&event_type,1); 
+
+       if(event_type == SEQUENCER_PLAYER_START)
+        {
+          flags = fcntl(G_MIDI_IN_timer_command_pipe[0], F_GETFL, 0);
+          flags |= O_NONBLOCK;
+          fcntl(G_MIDI_IN_timer_command_pipe[0], F_SETFL, flags);
+
+          G_sequencer_tick_interval = ((60000000/G_sequencer_BPM) / G_sequencer_PPQN) - TICK_INTERNAL_DELAY_IN_PLAY_LOOP;
+    
+          G_sequencer_ticks = 0;
+          G_last_sequencer_event_time = 0;
+
+          for(i = 1; i < MAX_TRACKS; i++)
+           {
+            current_part_in_track[i] = 1;
+            if(G_sequencer_tracks[i].parts[current_part_in_track[i]].event_count > 0)
+              current_packet_in_part[i] = G_sequencer_tracks[i].parts[current_part_in_track[i]].first_packet;
+            else
+              current_packet_in_part[i] = NULL;
+           }
+
+          while(event_type != SEQUENCER_PLAYER_STOP)
+           {
+            usleep(G_sequencer_tick_interval);
+            G_sequencer_ticks++;
+
+            for(i = 1; i < MAX_TRACKS; i++)
+             {
+              if(current_packet_in_part[i] == NULL)
+               continue;
+              if(current_packet_in_part[i]->arrival_time == G_sequencer_ticks)
+               {
+                MIDI_write_short_event(current_packet_in_part[i]);
+                current_packet_in_part[i] = current_packet_in_part[i]->next_packet;
+               }
+              if(G_sequencer_tracks[i].parts[current_part_in_track[i]].end_time == G_sequencer_ticks)
+               if(G_sequencer_tracks[i].part_count > current_part_in_track[i])
+                {
+                 current_part_in_track[i]++;
+                 current_packet_in_part[i] = G_sequencer_tracks[i].parts[current_part_in_track[i]].first_packet;
+                }
+             }
+            
+
+            read(G_MIDI_IN_timer_command_pipe[0],&event_type,1);
+           }
+          
+
+        }
+
+    }
+ }
+
 void SYS_MIDI_IN_timer(void *param)
 {
  
@@ -27,7 +96,7 @@ void SYS_MIDI_IN_timer(void *param)
           fcntl(G_MIDI_IN_timer_command_pipe[0], F_SETFL, flags);
           
           // calculated in microseconds:
-          G_sequencer_tick_interval = ((60000000/G_sequencer_BPM) / G_sequencer_PPQN) - TICK_INTERNAL_DELAY;
+          G_sequencer_tick_interval = ((60000000/G_sequencer_BPM) / G_sequencer_PPQN) - TICK_INTERNAL_DELAY_IN_RECORD_LOOP;
  
           SYS_debug(DEBUG_NORMAL,"MIDI IN timer start. Tick interval: %d", G_sequencer_tick_interval);
 
@@ -88,7 +157,7 @@ void SEQ_initial_rec_LED_flash()
 
   IH_set_status_bar(" SEQ REC PREP ");
 
-  tick_interval = ((60000000/G_sequencer_BPM) / G_sequencer_PPQN) - TICK_INTERNAL_DELAY;
+  tick_interval = ((60000000/G_sequencer_BPM) / G_sequencer_PPQN) - TICK_INTERNAL_DELAY_IN_RECORD_LOOP;
 
   // 4/4 tempo, flash two bars (8 quaters), then start recording
 
@@ -439,6 +508,9 @@ void SEQ_sequencer_play()
          IH_set_keymap_bar("PLY","SET","DEL","EXI");
          sprintf(seq_status," SEQ PLAY STOP");
        }
+
+      IH_set_status_bar(seq_status);
+
       pthread_mutex_lock(&G_display_lock);
       LCDdisplay();
       pthread_mutex_unlock(&G_display_lock);

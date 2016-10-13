@@ -194,6 +194,14 @@ uint8_t IH_sysex_librarian_app(void)
 
         send_buffer_len = SYS_read_sysex_buffer_from_file(filename_to_play,&G_sysex_transmit_buffer);
 
+        if(G_sysex_transmit_buffer[0] != 0xF0) 
+         {
+           IH_info("wrong format!");
+           free(filename_to_play);
+           lcd_needs_update = 1;
+           break;
+         }
+
         if(send_buffer_len > 0)
            {
             LCDclear();
@@ -306,14 +314,17 @@ uint8_t IH_sequencer_app(void)
     
       case KEY2:
        SEQ_sequencer_play();
+       lcd_needs_update = 1;
        break;
 
       case KEY3:
        SEQ_sequencer_edit_part();
+       lcd_needs_update = 1;
        break;
 
       case KEY4:
        SEQ_sequencer_setup();
+       lcd_needs_update = 1;
        break;
 
       case ENC_KEY:

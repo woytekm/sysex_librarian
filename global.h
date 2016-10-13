@@ -186,11 +186,16 @@ pthread_mutex_t G_display_lock;
 
 uint8_t G_active_app;
 
-#define TICK_INTERNAL_DELAY 70 // 70 microseconds of system delay for usleep() calls
+#define TICK_INTERNAL_DELAY_IN_RECORD_LOOP 70 // 70 microseconds of system delay for usleep() calls
+#define TICK_INTERNAL_DELAY_IN_PLAY_LOOP 70 // 70 microseconds of system delay for usleep() calls + this needs revisit and probably increase 
+                                            //                                                      as there is a lot more code in play loop than in record loop
 
 #define TIMER_START 10
 #define TIMER_STOP  20
 #define TIMER_RESET 30
+
+#define SEQUENCER_PLAYER_START 100
+#define SEQUENCER_PLAYER_STOP  200
 
 #define SEQUENCER_RECORDING   10
 #define SEQUENCER_REC_STOP    15
@@ -215,6 +220,7 @@ uint32_t end_time;   // in PPQN ticks
 uint16_t event_count;
 uint16_t repeats;
 midi_packet_t *packet_chain;
+midi_packet_t *first_packet;
 } sequencer_part_t;
 
 typedef struct {
@@ -230,6 +236,7 @@ uint8_t G_current_track;
 uint8_t G_current_part;
 uint8_t G_sequencer_state;
 int G_MIDI_IN_timer_command_pipe[2];
+int G_sequencer_player_command_pipe[2];
  
 uint32_t G_sequencer_ticks;            // uint32_t allows for more than 24 hour recording time with 200BPM tempo
 uint32_t G_last_sequencer_event_time;
