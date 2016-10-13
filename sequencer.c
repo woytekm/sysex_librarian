@@ -15,19 +15,20 @@ void SEQ_player(void *param)
     {
        flags = fcntl(G_sequencer_player_command_pipe[0], F_GETFL, 0);
        flags &= ~O_NONBLOCK;
-       fcntl(G_MIDI_IN_timer_command_pipe[0], F_SETFL, flags);
-       read(G_MIDI_IN_timer_command_pipe[0],&event_type,1); 
+       fcntl(G_sequencer_player_command_pipe[0], F_SETFL, flags);
+       read(G_sequencer_player_command_pipe[0],&event_type,1); 
 
        if(event_type == SEQUENCER_PLAYER_START)
         {
-          flags = fcntl(G_MIDI_IN_timer_command_pipe[0], F_GETFL, 0);
+          flags = fcntl(G_sequencer_player_command_pipe[0], F_GETFL, 0);
           flags |= O_NONBLOCK;
-          fcntl(G_MIDI_IN_timer_command_pipe[0], F_SETFL, flags);
+          fcntl(G_sequencer_player_command_pipe[0], F_SETFL, flags);
 
           G_sequencer_tick_interval = ((60000000/G_sequencer_BPM) / G_sequencer_PPQN) - TICK_INTERNAL_DELAY_IN_PLAY_LOOP;
     
           G_sequencer_ticks = 0;
           G_last_sequencer_event_time = 0;
+          G_last_played_packet = NULL;
 
           for(i = 1; i < MAX_TRACKS; i++)
            {
@@ -47,9 +48,13 @@ void SEQ_player(void *param)
              {
               if(current_packet_in_part[i] == NULL)
                continue;
-              if(current_packet_in_part[i]->arrival_time == G_sequencer_ticks)
+              if(current_packet_in_part[i]->arrival_time == (G_sequencer_ticks - G_sequencer_tracks[i].parts[current_part_in_track[i]].start_time))
                {
+                printf("player: wrote MIDI packet, arrival time: %d\n", current_packet_in_part[i]->arrival_time);
                 MIDI_write_short_event(current_packet_in_part[i]);
+                G_last_played_packet = current_packet_in_part[i];
+                event_type = KEY_REFRESH_DISPLAY;
+                write(G_keyboard_event_pipe[1],&event_type,1);
                 current_packet_in_part[i] = current_packet_in_part[i]->next_packet;
                }
               if(G_sequencer_tracks[i].parts[current_part_in_track[i]].end_time == G_sequencer_ticks)
@@ -59,16 +64,15 @@ void SEQ_player(void *param)
                  current_packet_in_part[i] = G_sequencer_tracks[i].parts[current_part_in_track[i]].first_packet;
                 }
              }
-            
+            read(G_sequencer_player_command_pipe[0],&event_type,1);
 
-            read(G_MIDI_IN_timer_command_pipe[0],&event_type,1);
            }
-          
-
         }
-
     }
  }
+
+
+
 
 void SYS_MIDI_IN_timer(void *param)
 {
@@ -477,7 +481,7 @@ void SEQ_sequencer_record()
 void SEQ_sequencer_play()
  {
   uint8_t key_event, lcd_needs_update;
-  uint8_t timer_command;
+  uint8_t player_command;
   uint8_t do_exit, next_app;
   char seq_status[20];
 
@@ -497,6 +501,8 @@ void SEQ_sequencer_play()
        {
          IH_set_keymap_bar("STP","PSE","   ","   ");
          sprintf(seq_status," SEQ PLAYING ");
+         if(G_last_played_packet != NULL)
+          MD_display_packet(21,G_last_played_packet->packet_id,G_last_played_packet,TEXT_INVERTED);
        }
       else if(G_sequencer_state == SEQUENCER_PLAY_PAUSED)
        {
@@ -526,6 +532,19 @@ void SEQ_sequencer_play()
     {
 
       case KEY1:
+       if((G_sequencer_state == SEQUENCER_PLAY_STOP) || (G_sequencer_state == SEQUENCER_PLAY_PAUSED))
+        {
+         player_command = SEQUENCER_PLAYER_START;
+         write(G_sequencer_player_command_pipe[1],&player_command,1);       
+         G_sequencer_state = SEQUENCER_PLAYING;
+        }
+       else if(G_sequencer_state == SEQUENCER_PLAYING)
+        {
+         player_command = SEQUENCER_PLAYER_STOP;
+         write(G_sequencer_player_command_pipe[1],&player_command,1);
+         G_sequencer_state = SEQUENCER_PLAY_STOP;
+        }
+        lcd_needs_update = 1;
        break;
 
       case KEY2:
@@ -540,6 +559,10 @@ void SEQ_sequencer_play()
         G_sequencer_state = SEQUENCER_PLAY_STOP;
        return;
       break;
+
+     case KEY_REFRESH_DISPLAY:
+      lcd_needs_update = 1;
+     break;
 
     }
 

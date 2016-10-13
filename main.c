@@ -45,6 +45,7 @@ int main(int argc, char **argv)
   SYS_start_task(TASK_INTERFACE_HW, SYS_hw_interface_thread, NULL, SCHED_RR, PRIO_VERYHIGH91);   
   SYS_start_task(TASK_MIDI_INOUT_INDICATOR, IH_MIDI_inout_indicator, NULL, SCHED_RR, PRIO_VERYHIGH92);
   SYS_start_task(TASK_MIDI_IN_TIMER, SYS_MIDI_IN_timer, NULL, SCHED_RR, PRIO_VERYHIGH93);
+  SYS_start_task(TASK_SEQUENCER_PLAYER, SEQ_player, NULL, SCHED_RR, PRIO_VERYHIGH94);
 
   SYS_debug(DEBUG_NORMAL,"SYS: MidiCube startup complete.");  
 

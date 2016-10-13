@@ -54,6 +54,7 @@
 #define TASK_INTERFACE_HW 6
 #define TASK_MIDI_INOUT_INDICATOR 7
 #define TASK_MIDI_IN_TIMER 8
+#define TASK_SEQUENCER_PLAYER 9
 
 #define DEBUG_NORMAL 2
 #define DEBUG_HIGH 3
@@ -102,6 +103,7 @@ void SYS_keyboard_thread(void *params);
 void SYS_shiftin_thread(void *params);
 void SYS_hw_interface_thread(void *params);
 void SYS_MIDI_IN_timer(void *params);
+void SEQ_player(void *param);
 
 uint8_t G_curses_terminal_on;
 
@@ -187,7 +189,7 @@ pthread_mutex_t G_display_lock;
 uint8_t G_active_app;
 
 #define TICK_INTERNAL_DELAY_IN_RECORD_LOOP 70 // 70 microseconds of system delay for usleep() calls
-#define TICK_INTERNAL_DELAY_IN_PLAY_LOOP 70 // 70 microseconds of system delay for usleep() calls + this needs revisit and probably increase 
+#define TICK_INTERNAL_DELAY_IN_PLAY_LOOP 90 // 90 microseconds of system delay for usleep() calls + this needs revisit and probably increase 
                                             //                                                      as there is a lot more code in play loop than in record loop
 
 #define TIMER_START 10
@@ -235,6 +237,7 @@ sequencer_track_t G_sequencer_tracks[MAX_TRACKS];
 uint8_t G_current_track;
 uint8_t G_current_part;
 uint8_t G_sequencer_state;
+midi_packet_t *G_last_played_packet;
 int G_MIDI_IN_timer_command_pipe[2];
 int G_sequencer_player_command_pipe[2];
  
