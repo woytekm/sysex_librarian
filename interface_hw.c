@@ -535,7 +535,7 @@ uint8_t IH_MIDI_inout_indicator()
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
-    usleep(50000);
+    usleep(130000);
     LCDdrawstring(71,1,"  ",TEXT_INVERTED);
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
