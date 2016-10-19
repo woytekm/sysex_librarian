@@ -53,7 +53,7 @@ void SYS_shiftin_thread(void *params)
     {
       bcm2835_gpio_set(GPIO27_CP_PIN13);
       shift_val_new |= bcm2835_gpio_lev(GPIO23_Q7_PIN16) << reg_bits;
-      usleep(40);
+      usleep(250);
       bcm2835_gpio_clr(GPIO27_CP_PIN13);
     }
 

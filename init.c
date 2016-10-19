@@ -10,6 +10,7 @@ void SYS_init(void)
     G_saved_sysex_msg_count = 0;
     G_mididump_packet_chain = NULL;
     G_mididump_packet_count = 0;
+    G_last_status_byte = 0;
 
     G_sequencer_PPQN = 192;
     G_sequencer_BPM = 120;
@@ -55,8 +56,8 @@ int8_t RPi_MIDI_init(void)
     cfsetispeed(&options, B38400);
     cfsetospeed(&options, B38400);
     cfmakeraw(&options);
-    //options.c_cflag |= (CLOCAL | CREAD);
-    //options.c_cflag &= ~CRTSCTS;
+    // options.c_cflag |= (CLOCAL | CREAD);
+    // options.c_cflag &= ~CRTSCTS;
     if (tcsetattr(UART_fd, TCSANOW, &options) != 0)
      return -1;
 

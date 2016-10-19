@@ -56,10 +56,6 @@
 #define TASK_MIDI_IN_TIMER 8
 #define TASK_SEQUENCER_PLAYER 9
 
-#define DEBUG_NORMAL 2
-#define DEBUG_HIGH 3
-#define DEBUG_VERYHIGH 4
-
 #define MAX_TASK 8
 
 #define MAXMSG 255
@@ -70,12 +66,14 @@
 #define DEBUG_VERYHIGH 4
 
 #define DEBUG 1
-#define DEBUG_LEVEL 2
+#define DEBUG_LEVEL 3
+#define DEBUG_SERIAL 1
 
 #define DEFAULT_THREAD_STACK_SIZE 2048000
 
 int     G_MIDI_fd;
 uint8_t G_MIDI_msg_lengths[256];
+uint8_t G_last_status_byte;
 
 typedef struct _task_t {
   pthread_t task_id;
@@ -167,6 +165,8 @@ unsigned char *packet_buffer;
 uint32_t arrival_time;
 uint32_t packet_len;
 uint16_t packet_id;
+uint8_t running_status;
+uint8_t running_status_byte;
 void *prev_packet;
 void *next_packet;
 } midi_packet_t;

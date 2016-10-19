@@ -8,10 +8,22 @@ void SEQ_player(void *param)
    uint32_t event_interval_counter;
    int flags, error;
    pipe(G_sequencer_player_command_pipe);
+   midi_packet_t all_notes_off;
 
    midi_packet_t *current_packet_in_part[MAX_TRACKS];
    uint8_t        current_part_in_track[MAX_TRACKS];
    uint16_t       played_part_events[MAX_TRACKS];
+
+
+   // build all notes off packet
+   all_notes_off.packet_len = 3;
+   all_notes_off.packet_buffer = malloc(3);
+   all_notes_off.next_packet = NULL; 
+   all_notes_off.prev_packet = NULL;
+   all_notes_off.arrival_time = 0;
+   all_notes_off.packet_buffer[0] = 0xB0;
+   all_notes_off.packet_buffer[1] = 0x7B;
+   all_notes_off.packet_buffer[2] = 0x0;
 
    while(1)
     {
@@ -60,11 +72,20 @@ void SEQ_player(void *param)
                 finished_tracks++;
                 continue;
                }
-              if(current_packet_in_part[i]->arrival_time == (G_sequencer_ticks - G_last_sequencer_event_time))
+              if((current_packet_in_part[i]->arrival_time == (G_sequencer_ticks - G_last_sequencer_event_time)) &&
+                 (G_sequencer_tracks[i].parts[current_part_in_track[i]].event_count > played_part_events[i]))
                {
                 MIDI_write_short_event(current_packet_in_part[i]);
                 G_last_sequencer_event_time = G_sequencer_ticks;
                 played_part_events[i]++;
+
+                if(current_packet_in_part[i]->packet_len == 2)
+                  SYS_debug(DEBUG_NORMAL,"play: packet [%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],current_packet_in_part[i]->packet_buffer[1],current_packet_in_part[i]->arrival_time);
+                else if(current_packet_in_part[i]->packet_len == 3)
+                  SYS_debug(DEBUG_NORMAL,"play: packet [%x,%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],
+                                                                              current_packet_in_part[i]->packet_buffer[1],
+                                                                              current_packet_in_part[i]->packet_buffer[2],
+                                                                              current_packet_in_part[i]->arrival_time);
 
                 G_last_played_packet = current_packet_in_part[i];
                 event_type = KEY_REFRESH_DISPLAY;
@@ -75,25 +96,27 @@ void SEQ_player(void *param)
                }
               if(G_sequencer_tracks[i].parts[current_part_in_track[i]].end_time == G_sequencer_ticks)
                {
-                 SYS_debug(DEBUG_NORMAL,"player: end of the part %d in track %d\n",current_part_in_track[i],i);
+                 SYS_debug(DEBUG_NORMAL,"player: end of the part %d in track %d",current_part_in_track[i],i);
                  if(G_sequencer_tracks[i].part_count > current_part_in_track[i])
                   {
                    current_part_in_track[i]++;
                    current_packet_in_part[i] = G_sequencer_tracks[i].parts[current_part_in_track[i]].first_packet;
                    played_part_events[i] = 0;
-                   SYS_debug(DEBUG_NORMAL,"player: start of the part %d in track %d\n",current_part_in_track[i],i);    
+                   SYS_debug(DEBUG_NORMAL,"player: start of the part %d in track %d",current_part_in_track[i],i);    
                   }
                  else
                   {
-                   SYS_debug(DEBUG_NORMAL,"player: end of the track %d\n",i);
-                   current_packet_in_part[i] = NULL;  // terminate this track - all of the parts were played
+                   SYS_debug(DEBUG_NORMAL,"player: end of the track %d",i);
+                   current_packet_in_part[i] = NULL;                           // terminate this track - all of the parts were played
+                   all_notes_off.packet_buffer[1] = 0xB0 | (i - 1);            // set midi channel = track number (for now)
+                   MIDI_write_short_event(&all_notes_off);
                   }
                }
              }
 
-            if(finished_tracks == (MAX_TRACKS - 1))
+            if(finished_tracks == (MAX_TRACKS - 1)) // all tracks finished - stop the playback
              {
-              printf("stop <-----------\n");
+              SYS_debug(DEBUG_NORMAL,"\nplayer stop <-----------\n");
               G_sequencer_state = SEQUENCER_PLAY_STOP;
               event_type = KEY_REFRESH_DISPLAY;
               write(G_keyboard_event_pipe[1],&event_type,1);

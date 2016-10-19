@@ -64,7 +64,7 @@ midi_packet_t *MD_find_packet_in_chain(midi_packet_t *packet_chain, uint16_t pac
 void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *packet_chain, uint8_t is_inverted)
  {
   midi_packet_t *packet_to_display;
-  uint8_t midi_channel, midi_msgtype;
+  uint8_t midi_channel, midi_msgtype, running_status;
   char *packet_info;
  
   packet_info = malloc(16); 
@@ -75,49 +75,83 @@ void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *p
 
   packet_to_display = MD_find_packet_in_chain(packet_chain, packet_id);
  
-  
-  if(packet_to_display->packet_buffer[0] < 240)  /* channel related message - let's split channel number and message type */
-    {
-     midi_channel = (packet_to_display->packet_buffer[0] & 0x0F) + 1;  /* 15 = 0b00001111, channel ID in MIDI messages starts from 0  */
-     midi_msgtype = packet_to_display->packet_buffer[0] & 0xF0; // 240 = 0b11110000
+  if(!packet_to_display->running_status) 
+   {
+     if(packet_to_display->packet_buffer[0] < 240)  /* channel related message - let's split channel number and message type */
+      {
+        midi_channel = (packet_to_display->packet_buffer[0] & 0x0F) + 1;  /* 15 = 0b00001111, channel ID in MIDI messages starts from 0  */
+        midi_msgtype = packet_to_display->packet_buffer[0] & 0xF0; // 240 = 0b11110000
+      }
+     else   /* message = 0b1111nnnn  - system common message or realtime message */
+      {
+        midi_channel = 0;
+        midi_msgtype = packet_to_display->packet_buffer[0];
+      }
+     running_status = 0;
     }
-   else   /* message = 0b1111nnnn  - system common message or realtime message */
+   else
     {
-     midi_channel = 0;
-     midi_msgtype = packet_to_display->packet_buffer[0];
+      midi_channel = (packet_to_display->running_status_byte & 0x0F) + 1; 
+      midi_msgtype = packet_to_display->running_status_byte;
+      running_status = 1;
     }
 
   switch(midi_msgtype)
    {
      case 0x90:  /* note on */
-       if(packet_to_display->packet_buffer[2] == 0) // note off
-        sprintf(packet_info,"%2d NOTE OFF %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      if(!running_status)
+        {
+          if(packet_to_display->packet_buffer[2] == 0) // note off
+           sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[1]);
+          else
+           sprintf(packet_info,"%2d NOTE ON  %02d",midi_channel,packet_to_display->packet_buffer[1]);
+        }
        else
-        sprintf(packet_info,"%2d NOTE ON  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+        {
+          if(packet_to_display->packet_buffer[1] == 0) // note off
+           sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[0]);
+          else
+           sprintf(packet_info,"%2d NOTE ON  %02d",midi_channel,packet_to_display->packet_buffer[0]);
+        }
       break;
 
      case 0x80: /* note off */
-       sprintf(packet_info,"%2d NOTE OFF %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      if(!running_status)
+        sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[1]);
+      else
+        sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[0]);
       break;
      
      case 0xA0:
-       sprintf(packet_info,"%2d AF TOUCH %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      if(!running_status)
+        sprintf(packet_info,"%2d AF TCH %03d",midi_channel,packet_to_display->packet_buffer[1]);
+      else
+        sprintf(packet_info,"%2d AF TCH %03d",midi_channel,packet_to_display->packet_buffer[0]);
       break;
 
      case 0xB0:
-       sprintf(packet_info,"%2d CONTROL  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      if(!running_status)
+        sprintf(packet_info,"%2d CTRL  %03d",midi_channel,packet_to_display->packet_buffer[1]);
+      else
+        sprintf(packet_info,"%2d CTRL  %03d",midi_channel,packet_to_display->packet_buffer[0]);
       break;
 
      case 0xC0:
-       sprintf(packet_info,"%2d PGM CHG  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+       sprintf(packet_info,"%2d PGM CHG %02d",midi_channel,packet_to_display->packet_buffer[1]);
       break;
 
      case 0xD0:
-       sprintf(packet_info,"%2d AF TOUCH %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      if(!running_status)
+        sprintf(packet_info,"%2d AF TCH %02d",midi_channel,packet_to_display->packet_buffer[1]);
+      else
+        sprintf(packet_info,"%2d AF TCH %02d",midi_channel,packet_to_display->packet_buffer[0]);
       break;
 
      case 0xE0:
-       sprintf(packet_info,"%2d PITCH B  %2d",midi_channel,packet_to_display->packet_buffer[1]);
+      if(!running_status)
+        sprintf(packet_info,"%2d P BEND %03d",midi_channel,packet_to_display->packet_buffer[1]);
+      else
+        sprintf(packet_info,"%2d P BEND %03d",midi_channel,packet_to_display->packet_buffer[0]);
       break;
 
      case 0xFF:

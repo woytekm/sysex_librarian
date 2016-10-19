@@ -6,7 +6,7 @@ void MIDI_IN_thread(void *param)
  {
 
    int pollrc,end=0;
-   uint8_t free_SID, midi_channel, midi_msgtype, last_message_incomplete, i, event_type;
+   uint8_t free_SID, midi_channel, midi_msgtype, last_message_incomplete,i,j,event_type;
    uint32_t rc, rcdelta;
    unsigned char midi_message_buffer[MIDI_IN_BUFLEN];
    struct pollfd fds;
@@ -28,10 +28,10 @@ void MIDI_IN_thread(void *param)
 
    G_received_sysex_msg_count = 0;
 
-   while(!end)
-    {
+  while(!end)
+   {
 
-      pollrc = poll(&fds, 1, -1);
+    pollrc = poll(&fds, 1, -1);
 
     if (pollrc < 0)
      {
@@ -50,26 +50,28 @@ void MIDI_IN_thread(void *param)
           {
 
           
-            while(last_message_incomplete)   /* partial midi message reassemblyi. TODO: add midi_message_buffer overflow check */
+            while(last_message_incomplete)   /* partial midi message reassembly. TODO: add midi_message_buffer overflow check */
              {
               if(MIDI_is_partial_message(&midi_message_buffer, rc))
                {
                 SYS_debug(DEBUG_HIGH,"MIDI_in_thread: partial message - reading more");
                 rcdelta = read(G_MIDI_fd, midi_message_buffer+rc, sizeof(midi_message_buffer) - rc );  
-                SYS_debug(DEBUG_HIGH,"MIDI_in_thread: serial read received %d bytes",rcdelta);
+                SYS_debug(DEBUG_HIGH,"MIDI_in_thread: serial read received additional %d bytes",rcdelta);
                 if(rcdelta == 0) continue;  /* second read is empty - seems like truncated message - discard it */
                 else if( (rc + rcdelta) >= MIDI_IN_BUFLEN) continue; /* next read will probably cause buffer overflow - discard */
                 else rc += rcdelta;
-
-                // tell appropriate thread to signal outgoing MIDI on the display
-                event_type = MIDI_IN;
-                write(G_MIDI_inout_event_pipe[1],&event_type,1);
                } 
               else last_message_incomplete = 0;
              }
 
            
-           //SYS_debug(DEBUG_HIGH,"MIDI_in_thread: received %d bytes from MIDI IN",rc);
+           if(DEBUG_SERIAL)
+            {
+              fprintf(stderr,"serial buffer dump: [");
+              for(j = 0;j<rc;j++)
+               fprintf(stderr,"%02X ",midi_message_buffer[j]);
+              fprintf(stderr,"]\n");
+            }
  
            /* this will recursively parse entire message buffer: */
            MIDI_parse_msgbuffer(midi_message_buffer, 0, rc);
