@@ -80,9 +80,9 @@ void SEQ_player(void *param)
                 played_part_events[i]++;
 
                 if(current_packet_in_part[i]->packet_len == 2)
-                  SYS_debug(DEBUG_NORMAL,"play: packet [%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],current_packet_in_part[i]->packet_buffer[1],current_packet_in_part[i]->arrival_time);
+                  SYS_debug(DEBUG_HIGH,"play: packet [%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],current_packet_in_part[i]->packet_buffer[1],current_packet_in_part[i]->arrival_time);
                 else if(current_packet_in_part[i]->packet_len == 3)
-                  SYS_debug(DEBUG_NORMAL,"play: packet [%x,%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],
+                  SYS_debug(DEBUG_HIGH,"play: packet [%x,%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],
                                                                               current_packet_in_part[i]->packet_buffer[1],
                                                                               current_packet_in_part[i]->packet_buffer[2],
                                                                               current_packet_in_part[i]->arrival_time);
@@ -92,7 +92,16 @@ void SEQ_player(void *param)
                 write(G_keyboard_event_pipe[1],&event_type,1);
 
                 if(played_part_events[i] < G_sequencer_tracks[i].parts[current_part_in_track[i]].event_count)
-                 current_packet_in_part[i] = current_packet_in_part[i]->next_packet;  
+                 {
+                   current_packet_in_part[i] = current_packet_in_part[i]->next_packet;  
+                if(current_packet_in_part[i]->packet_len == 2)
+                  SYS_debug(DEBUG_HIGH,"play: next packet [%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],current_packet_in_part[i]->packet_buffer[1],current_packet_in_part[i]->arrival_time);
+                else if(current_packet_in_part[i]->packet_len == 3)
+                  SYS_debug(DEBUG_HIGH,"play: next packet [%x,%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],
+                                                                              current_packet_in_part[i]->packet_buffer[1],
+                                                                              current_packet_in_part[i]->packet_buffer[2],
+                                                                              current_packet_in_part[i]->arrival_time);
+                 }
                }
               if(G_sequencer_tracks[i].parts[current_part_in_track[i]].end_time == G_sequencer_ticks)
                {
@@ -557,23 +566,30 @@ void SEQ_sequencer_play()
 
       if(G_sequencer_state == SEQUENCER_PLAYING)
        {
-         IH_set_keymap_bar("STP","PSE","   ","   ");
-         sprintf(seq_status," SEQ PLAYING ");
-         if(G_last_played_packet != NULL)
-          MD_display_packet(21,G_last_played_packet->packet_id,G_last_played_packet,TEXT_INVERTED);
+         if(key_event == KEY_REFRESH_DISPLAY)
+          {
+           if(G_last_played_packet != NULL)
+             MD_display_packet(21,G_last_played_packet->packet_id,G_last_played_packet,TEXT_INVERTED);
+          }
+         else
+          {
+           IH_set_keymap_bar("STP","PSE","   ","   ");
+           sprintf(seq_status," SEQ PLAYING ");
+           IH_set_status_bar(seq_status);
+          }
        }
       else if(G_sequencer_state == SEQUENCER_PLAY_PAUSED)
        {
          IH_set_keymap_bar("PLY","   ","   ","EXI");
          sprintf(seq_status," SEQ PSE      ");
+         IH_set_status_bar(seq_status);
        }
       else if(G_sequencer_state == SEQUENCER_PLAY_STOP)
        {
          IH_set_keymap_bar("PLY","SET","DEL","EXI");
          sprintf(seq_status," SEQ PLAY STOP");
+         IH_set_status_bar(seq_status);
        }
-
-      IH_set_status_bar(seq_status);
 
       pthread_mutex_lock(&G_display_lock);
       LCDdisplay();

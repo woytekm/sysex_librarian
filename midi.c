@@ -35,10 +35,12 @@ uint8_t MIDI_is_partial_message(unsigned char *buffer, uint32_t len)
      if(buffer[buffer_position] > 127)
       {
        if(buffer[buffer_position] < 240)  /* channel related message - let's split channel number and message type */
-         midi_msgtype = buffer[buffer_position] & 240; // 240 = 0b11110000
+         {
+           midi_msgtype = buffer[buffer_position] & 240; // 240 = 0b11110000
+           G_last_status_byte = midi_msgtype;
+         }
        else   /* message = 0b1111nnnn  - system common message or realtime message */
          midi_msgtype = buffer[buffer_position];
-       G_last_status_byte = midi_msgtype;
        }
      else  // is it running status message?
       {
@@ -105,7 +107,9 @@ void MIDI_init_MIDI_msg_lenghts(void)
     uint32_t current_sequencer_ticks;
 
     if(at_offset >= buflen)   /* end of buffer  */
-     return;
+     {
+       return;
+     }
 
     if(midi_in_buffer[at_offset] > 127)
      {
@@ -139,9 +143,9 @@ void MIDI_init_MIDI_msg_lenghts(void)
        {
         next_message_offset = at_offset + G_MIDI_msg_lengths[0x90];
         if(midi_in_buffer[at_offset+2] == 0)   /* attack velocity = 0, this is NOTE OFF  */
-          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on (off), CH%d, (%x, %x)\n", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
+          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on (off), CH%d, (%x, %x)", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
         else
-          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on, CH%d, (%x, %x)\n", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
+          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on, CH%d, (%x, %x)", midi_channel, midi_in_buffer[at_offset+1], midi_in_buffer[at_offset+2]);
         if(midi_in_buffer[at_offset+1] > 95 )
           SYS_debug(DEBUG_HIGH,"  invalid MIDI note value %d!\n",midi_in_buffer[at_offset+1]);
         message_ok = 1;
@@ -150,9 +154,9 @@ void MIDI_init_MIDI_msg_lenghts(void)
        {
         next_message_offset = (at_offset + G_MIDI_msg_lengths[0x90]) - 1;
         if(midi_in_buffer[at_offset+1] == 0)   /* attack velocity = 0, this is NOTE OFF  */
-          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on (off), CH%d, (%x, %x) (running status)\n", midi_channel, midi_in_buffer[at_offset], midi_in_buffer[at_offset+1]);
+          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on (off), CH%d, (%x, %x) (running status)", midi_channel, midi_in_buffer[at_offset], midi_in_buffer[at_offset+1]);
         else
-          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on, CH%d, (%x, %x) (running status)\n", midi_channel, midi_in_buffer[at_offset], midi_in_buffer[at_offset+1]);
+          SYS_debug(DEBUG_HIGH,"RCV: MIDI note on, CH%d, (%x, %x) (running status)", midi_channel, midi_in_buffer[at_offset], midi_in_buffer[at_offset+1]);
         if(midi_in_buffer[at_offset] > 95 )
           SYS_debug(DEBUG_HIGH,"  invalid MIDI note value %d!\n",midi_in_buffer[at_offset]);
         message_ok = 1;
@@ -163,14 +167,14 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(!running_status)
        {      
         next_message_offset = at_offset + G_MIDI_msg_lengths[0x80];
-        SYS_debug(DEBUG_HIGH,"RCV: MIDI note off, CH%d, (%x)\n", midi_channel, midi_in_buffer[at_offset+1]);
+        SYS_debug(DEBUG_HIGH,"RCV: MIDI note off, CH%d, (%x)", midi_channel, midi_in_buffer[at_offset+1]);
         message_ok = 1;
         break;
        }
       else
        {
         next_message_offset = (at_offset + G_MIDI_msg_lengths[0x80]) - 1;
-        SYS_debug(DEBUG_HIGH,"RCV: MIDI note off, CH%d, (%x) (running status)\n", midi_channel, midi_in_buffer[at_offset]);
+        SYS_debug(DEBUG_HIGH,"RCV: MIDI note off, CH%d, (%x) (running status)", midi_channel, midi_in_buffer[at_offset]);
         message_ok = 1;
         break;
        }
@@ -179,7 +183,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(!running_status)
        {
         next_message_offset = at_offset + G_MIDI_msg_lengths[0xA0];
-        SYS_debug(DEBUG_HIGH,"RCV: aftertouch message\n");
+        SYS_debug(DEBUG_HIGH,"RCV: aftertouch message (%x)",midi_in_buffer[at_offset+1]);
         message_ok = 1;
         break;
        }
@@ -192,14 +196,23 @@ void MIDI_init_MIDI_msg_lenghts(void)
        }
 
      case 0xB0:  /* control change */
-      next_message_offset = at_offset + G_MIDI_msg_lengths[0xB0];
-      SYS_debug(DEBUG_HIGH,"RCV: control change message\n");
-      message_ok = 1;
+      if(!running_status)
+       {
+        next_message_offset = at_offset + G_MIDI_msg_lengths[0xB0];
+        SYS_debug(DEBUG_HIGH,"RCV: control change message (%x)",midi_in_buffer[at_offset+1]);
+        message_ok = 1;
+       }
+      else
+      {
+        next_message_offset = (at_offset + G_MIDI_msg_lengths[0xB0]) - 1;
+        SYS_debug(DEBUG_HIGH,"RCV: control change message (%x) (running status)",midi_in_buffer[at_offset]);
+        message_ok = 1;
+      }
       break;
 
      case 0xC0: /* program change */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xC0];
-      SYS_debug(DEBUG_HIGH,"RCV: program change message\n");
+      SYS_debug(DEBUG_HIGH,"RCV: program change message (%x)",midi_in_buffer[at_offset+1]);
       message_ok = 1;
       break;
 
@@ -207,14 +220,14 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(!running_status)
        {
         next_message_offset = at_offset + G_MIDI_msg_lengths[0xD0];
-        SYS_debug(DEBUG_HIGH,"RCV: MIDI aftertouch message\n");
+        SYS_debug(DEBUG_HIGH,"RCV: MIDI aftertouch message (%x)",midi_in_buffer[at_offset+1]);
         message_ok = 1;
         break;
        }
       else
        {
         next_message_offset = (at_offset + G_MIDI_msg_lengths[0xD0]) - 1;
-        SYS_debug(DEBUG_HIGH,"RCV: MIDI channel aftertouch message (running status)\n");
+        SYS_debug(DEBUG_HIGH,"RCV: MIDI channel aftertouch message (%x) (running status)",midi_in_buffer[at_offset]);
         message_ok = 1;
         break;
        }
@@ -223,14 +236,14 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(!running_status)
        {
          next_message_offset = at_offset + G_MIDI_msg_lengths[0xE0];
-         SYS_debug(DEBUG_HIGH,"RCV: MIDI pitchbend message\n");
+         SYS_debug(DEBUG_HIGH,"RCV: MIDI pitchbend message (%x)",midi_in_buffer[at_offset+1]);
          message_ok = 1;
          break;
        }
       else
        {
          next_message_offset = (at_offset + G_MIDI_msg_lengths[0xE0]) - 1;
-         SYS_debug(DEBUG_HIGH,"RCV: MIDI pitchbend message (running status)\n");
+         SYS_debug(DEBUG_HIGH,"RCV: MIDI pitchbend message (%x) (running status)",midi_in_buffer[at_offset]);
          message_ok = 1;
          break;
        }
@@ -282,7 +295,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
 
      case 0xFF: /* MIDI reset */
       next_message_offset = at_offset + G_MIDI_msg_lengths[0xFF];
-      SYS_debug(DEBUG_HIGH,"RCV: general MIDI reset message\n");
+      SYS_debug(DEBUG_HIGH,"RCV: general MIDI reset message");
       message_ok = 1;
       break;
 
@@ -290,11 +303,11 @@ void MIDI_init_MIDI_msg_lenghts(void)
       if(midi_msgtype > 240)
        {
         next_message_offset = at_offset + 1;
-        SYS_debug(DEBUG_HIGH,"RCV: unknown general system message (%x)\n",midi_msgtype);
+        SYS_debug(DEBUG_HIGH,"RCV: unknown general system message (%x)",midi_msgtype);
        }
       else
        {
-        SYS_debug(DEBUG_HIGH,"RCV: unsupported MIDI message or garbage - discarding message buffer\n");
+        SYS_debug(DEBUG_HIGH,"RCV: unsupported MIDI message or garbage - discarding message buffer");
         return;    
        }
 
@@ -323,6 +336,8 @@ void MIDI_init_MIDI_msg_lenghts(void)
      G_mididump_packet_count++;
      G_mididump_packet_chain->packet_id = G_mididump_packet_count;
      G_mididump_packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;  // calculate delta
+     if(G_mididump_packet_chain->arrival_time == 0)  
+       G_mididump_packet_chain->arrival_time = 1;  
      G_last_sequencer_event_time = current_sequencer_ticks;
      event_type = KEY_REFRESH_DISPLAY;
      write(G_keyboard_event_pipe[1],&event_type,1);
@@ -358,15 +373,21 @@ void MIDI_init_MIDI_msg_lenghts(void)
     G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_id = G_sequencer_tracks[G_current_track].parts[G_current_part].event_count;
     G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;
 
-    if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 2)
-      SYS_debug(DEBUG_NORMAL,"record: packet [%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
+    if(G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time == 0)
+      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = 1;  // quick fix for now - player cannot play events if delta == 0 TODO
+
+    if(DEBUG_LEVEL == DEBUG_HIGH)
+     {
+      if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 2)
+       SYS_debug(DEBUG_HIGH,"record: packet [%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
                                                                        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[1],
                                                                        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time);
-    else if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 3)
-      SYS_debug(DEBUG_NORMAL,"record: packet [%x,%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
+      else if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 3)
+       SYS_debug(DEBUG_HIGH,"record: packet [%x,%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
                                                                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[1],
                                                                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[2],
                                                                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time);
+     }
 
     G_last_sequencer_event_time = current_sequencer_ticks;
     event_type = KEY_REFRESH_DISPLAY;

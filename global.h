@@ -66,8 +66,8 @@
 #define DEBUG_VERYHIGH 4
 
 #define DEBUG 1
-#define DEBUG_LEVEL 3
-#define DEBUG_SERIAL 1
+#define DEBUG_LEVEL 1
+#define DEBUG_SERIAL 0
 
 #define DEFAULT_THREAD_STACK_SIZE 2048000
 
