@@ -64,9 +64,10 @@ midi_packet_t *MD_find_packet_in_chain(midi_packet_t *packet_chain, uint16_t pac
 void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *packet_chain, uint8_t is_inverted)
  {
   midi_packet_t *packet_to_display;
-  uint8_t midi_channel, midi_msgtype, running_status;
+  uint8_t midi_channel, midi_msgtype, running_status, data_byte;
   char *packet_info;
  
+  data_byte = 0;
   packet_info = malloc(16); 
 
   packet_to_display = MD_find_packet_in_chain(packet_chain, packet_id);
@@ -96,66 +97,49 @@ void MD_display_packet(uint8_t display_row, uint16_t packet_id, midi_packet_t *p
       running_status = 1;
     }
 
+  if(packet_to_display->packet_len > 1)
+   {
+    if(running_status)
+     data_byte = packet_to_display->packet_buffer[0];
+    else
+     data_byte = packet_to_display->packet_buffer[1];
+   }
+
   switch(midi_msgtype)
    {
      case 0x90:  /* note on */
-      if(!running_status)
-        {
-          if(packet_to_display->packet_buffer[2] == 0) // note off
-           sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[1]);
-          else
-           sprintf(packet_info,"%2d NOTE ON  %02d",midi_channel,packet_to_display->packet_buffer[1]);
-        }
-       else
-        {
-          if(packet_to_display->packet_buffer[1] == 0) // note off
-           sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[0]);
-          else
-           sprintf(packet_info,"%2d NOTE ON  %02d",midi_channel,packet_to_display->packet_buffer[0]);
-        }
+      if(packet_to_display->packet_buffer[2] == 0) // note off
+        sprintf(packet_info,"%02d NOTE OFF %02d",midi_channel,data_byte);
+      else
+        sprintf(packet_info,"%02d NOTE ON  %02d",midi_channel,data_byte);
       break;
 
      case 0x80: /* note off */
-      if(!running_status)
-        sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[1]);
-      else
-        sprintf(packet_info,"%2d NOTE OFF %02d",midi_channel,packet_to_display->packet_buffer[0]);
+       sprintf(packet_info,"%02d NOTE OFF %02d",midi_channel,data_byte);
       break;
      
      case 0xA0:
-      if(!running_status)
-        sprintf(packet_info,"%2d AF TCH %03d",midi_channel,packet_to_display->packet_buffer[1]);
-      else
-        sprintf(packet_info,"%2d AF TCH %03d",midi_channel,packet_to_display->packet_buffer[0]);
+       sprintf(packet_info,"%02d AF TCH %02d  ",midi_channel,data_byte);
       break;
 
      case 0xB0:
-      if(!running_status)
-        sprintf(packet_info,"%2d CTRL  %03d",midi_channel,packet_to_display->packet_buffer[1]);
-      else
-        sprintf(packet_info,"%2d CTRL  %03d",midi_channel,packet_to_display->packet_buffer[0]);
+       sprintf(packet_info,"%02d CTRL  %02d   ",midi_channel,data_byte);
       break;
 
      case 0xC0:
-       sprintf(packet_info,"%2d PGM CHG %02d",midi_channel,packet_to_display->packet_buffer[1]);
+       sprintf(packet_info,"%02d PGM CHG %02d",midi_channel,data_byte);
       break;
 
      case 0xD0:
-      if(!running_status)
-        sprintf(packet_info,"%2d AF TCH %02d",midi_channel,packet_to_display->packet_buffer[1]);
-      else
-        sprintf(packet_info,"%2d AF TCH %02d",midi_channel,packet_to_display->packet_buffer[0]);
+       sprintf(packet_info,"%02d AF TCH %02d  ",midi_channel,data_byte);
       break;
 
      case 0xE0:
-      if(!running_status)
-        sprintf(packet_info,"%2d P BEND %03d",midi_channel,packet_to_display->packet_buffer[1]);
-      else
-        sprintf(packet_info,"%2d P BEND %03d",midi_channel,packet_to_display->packet_buffer[0]);
+       sprintf(packet_info,"%02d P BEND %03d",midi_channel,data_byte);
       break;
 
      case 0xFF:
-       sprintf(packet_info,"%2d RESET  ",midi_channel);
+       sprintf(packet_info,"%02d RESET  ",midi_channel);
       break;
 
    }

@@ -63,7 +63,7 @@ uint8_t MIDI_is_partial_message(unsigned char *buffer, uint32_t len)
       {
        buffer_position += G_MIDI_msg_lengths[midi_msgtype];
        if(running_status)
-        buffer_position--;
+        buffer_position -= 1; // running status message has no status byte
       }
  
      if(buffer_position > len) return 1;
@@ -107,9 +107,7 @@ void MIDI_init_MIDI_msg_lenghts(void)
     uint32_t current_sequencer_ticks;
 
     if(at_offset >= buflen)   /* end of buffer  */
-     {
-       return;
-     }
+     return;
 
     if(midi_in_buffer[at_offset] > 127)
      {
@@ -336,8 +334,6 @@ void MIDI_init_MIDI_msg_lenghts(void)
      G_mididump_packet_count++;
      G_mididump_packet_chain->packet_id = G_mididump_packet_count;
      G_mididump_packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;  // calculate delta
-     if(G_mididump_packet_chain->arrival_time == 0)  
-       G_mididump_packet_chain->arrival_time = 1;  
      G_last_sequencer_event_time = current_sequencer_ticks;
      event_type = KEY_REFRESH_DISPLAY;
      write(G_keyboard_event_pipe[1],&event_type,1);
@@ -373,8 +369,8 @@ void MIDI_init_MIDI_msg_lenghts(void)
     G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_id = G_sequencer_tracks[G_current_track].parts[G_current_part].event_count;
     G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;
 
-    if(G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time == 0)
-      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = 1;  // quick fix for now - player cannot play events if delta == 0 TODO
+    //if(G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time == 0)
+    //  G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = 1;  // quick fix for now - player cannot play events if delta == 0 TODO
 
     if(DEBUG_LEVEL == DEBUG_HIGH)
      {

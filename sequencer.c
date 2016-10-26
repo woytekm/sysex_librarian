@@ -27,6 +27,13 @@ void SEQ_player(void *param)
 
    while(1)
     {
+
+       for(i = 0; i < 16; i++) 
+        {
+         all_notes_off.packet_buffer[0] = 0xB0 | i;     // silence all MIDI channels
+         MIDI_write_short_event(&all_notes_off);
+        }
+
        flags = fcntl(G_sequencer_player_command_pipe[0], F_GETFL, 0);
        flags &= ~O_NONBLOCK;
        fcntl(G_sequencer_player_command_pipe[0], F_SETFL, flags);
@@ -72,7 +79,7 @@ void SEQ_player(void *param)
                 finished_tracks++;
                 continue;
                }
-              if((current_packet_in_part[i]->arrival_time == (G_sequencer_ticks - G_last_sequencer_event_time)) &&
+              while((current_packet_in_part[i]->arrival_time == (G_sequencer_ticks - G_last_sequencer_event_time)) &&
                  (G_sequencer_tracks[i].parts[current_part_in_track[i]].event_count > played_part_events[i]))
                {
                 MIDI_write_short_event(current_packet_in_part[i]);
@@ -103,6 +110,7 @@ void SEQ_player(void *param)
                                                                               current_packet_in_part[i]->arrival_time);
                  }
                }
+
               if(G_sequencer_tracks[i].parts[current_part_in_track[i]].end_time == G_sequencer_ticks)
                {
                  SYS_debug(DEBUG_NORMAL,"player: end of the part %d in track %d",current_part_in_track[i],i);
@@ -117,7 +125,7 @@ void SEQ_player(void *param)
                   {
                    SYS_debug(DEBUG_NORMAL,"player: end of the track %d",i);
                    current_packet_in_part[i] = NULL;                           // terminate this track - all of the parts were played
-                   all_notes_off.packet_buffer[1] = 0xB0 | (i - 1);            // set midi channel = track number (for now)
+                   all_notes_off.packet_buffer[0] = 0xB0 | (i - 1);            // set midi channel = track number (for now)
                    MIDI_write_short_event(&all_notes_off);
                   }
                }
@@ -410,32 +418,34 @@ void SEQ_sequencer_record()
 
     if(lcd_needs_update)
      {
-      LCDclear();
-      if(G_sequencer_state == SEQUENCER_RECORDING)
+      if((G_sequencer_state == SEQUENCER_RECORDING) && (key_event != KEY_REFRESH_DISPLAY))
        {
+         LCDclear();
          IH_set_keymap_bar("STP","PSE","   ","   ");
-         sprintf(seq_status," SEQ RECORDING");
-         sprintf(track_part_info,"T:%d/P:%2d/E:%3d",G_current_track,G_current_part,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count);
-         LCDdrawstring(0,11,track_part_info, TEXT_NORMAL);
+         sprintf(seq_status," SEQ REC T%02d",G_current_track+1);
+         IH_set_status_bar(seq_status);
        }
       else if(G_sequencer_state == SEQUENCER_REC_PAUSED)
        {
+         LCDclear();
          IH_set_keymap_bar("REC","   ","   ","EXI");
          sprintf(seq_status," SEQ PSE      ");
+         IH_set_status_bar(seq_status);
        }
       else if(G_sequencer_state == SEQUENCER_REC_STOP)
        {
+         LCDclear();
          IH_set_keymap_bar("REC","SET","DEL","EXI");
          sprintf(seq_status," SEQ REC STOP ");
-         sprintf(track_part_info,"T:%d/P:%2d/E:%3d",G_current_track,G_current_part,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count);
-         LCDdrawstring(0,11,track_part_info, TEXT_NORMAL);
+         IH_set_status_bar(seq_status);
        }
-
-      IH_set_status_bar(seq_status);
 
       if(G_sequencer_tracks[G_current_track].parts[G_current_part].event_count > 0)
        MD_display_packet(21,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count,
                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain,TEXT_INVERTED);
+
+      sprintf(track_part_info,"P:%02d/E:%04d",G_current_part,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count);
+      LCDdrawstring(0,11,track_part_info, TEXT_NORMAL);
 
       pthread_mutex_lock(&G_display_lock);
       LCDdisplay();
@@ -562,8 +572,6 @@ void SEQ_sequencer_play()
 
     if(lcd_needs_update)
      {
-      LCDclear();
-
       if(G_sequencer_state == SEQUENCER_PLAYING)
        {
          if(key_event == KEY_REFRESH_DISPLAY)
@@ -573,6 +581,7 @@ void SEQ_sequencer_play()
           }
          else
           {
+           LCDclear();
            IH_set_keymap_bar("STP","PSE","   ","   ");
            sprintf(seq_status," SEQ PLAYING ");
            IH_set_status_bar(seq_status);
@@ -580,12 +589,14 @@ void SEQ_sequencer_play()
        }
       else if(G_sequencer_state == SEQUENCER_PLAY_PAUSED)
        {
+         LCDclear();
          IH_set_keymap_bar("PLY","   ","   ","EXI");
          sprintf(seq_status," SEQ PSE      ");
          IH_set_status_bar(seq_status);
        }
       else if(G_sequencer_state == SEQUENCER_PLAY_STOP)
        {
+         LCDclear();
          IH_set_keymap_bar("PLY","SET","DEL","EXI");
          sprintf(seq_status," SEQ PLAY STOP");
          IH_set_status_bar(seq_status);
