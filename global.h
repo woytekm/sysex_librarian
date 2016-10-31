@@ -188,9 +188,9 @@ pthread_mutex_t G_display_lock;
 
 uint8_t G_active_app;
 
-#define TICK_INTERNAL_DELAY_IN_RECORD_LOOP 70 // 70 microseconds of system delay for usleep() calls
-#define TICK_INTERNAL_DELAY_IN_PLAY_LOOP 80 // 80 microseconds of system delay for usleep() calls + this needs revisit and probably increase 
-                                            //                                                      as there is a lot more code in play loop than in record loop
+#define TICK_INTERNAL_DELAY_IN_RECORD_LOOP 90   // (was 70) microseconds of system delay for usleep() calls
+#define TICK_INTERNAL_DELAY_IN_PLAY_LOOP   120  // (was 80) microseconds of system delay for usleep() calls + this needs revisit and probably increase 
+                                                //                                                      as there is a lot more code in play loop than in record loop
 
 #define TIMER_START 10
 #define TIMER_STOP  20

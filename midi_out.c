@@ -70,4 +70,33 @@ uint8_t MIDI_write_short_event(midi_packet_t *event)
       return 1;
  }
 
+uint8_t MIDI_all_notes_off_on_all_channels(void)           // some synths (as my Wavestation EX) apparently do not respont to "all notes off" CC in certain MIDI receive modes
+ {                                                         // this function does "brute force" all notes off on all channels 
+  uint8_t i,j;
+  uint8_t note;
+  uint8_t channel;
+  midi_packet_t note_off;
 
+  note_off.packet_len = 3;
+  note_off.packet_buffer = malloc(3);
+  note_off.next_packet = NULL;
+  note_off.prev_packet = NULL;
+  note_off.arrival_time = 0;
+  note_off.packet_buffer[0] = 0x0;
+  note_off.packet_buffer[1] = 0x0;
+  note_off.packet_buffer[2] = 0x0;
+  
+  for(j=0; j < 16; j++)
+   { 
+    note_off.packet_buffer[0] = 0x90 | j;
+    for(i=0; i<128; i++)
+     {
+      note_off.packet_buffer[1] = i;
+      MIDI_write_short_event(&note_off);
+     }
+   }
+
+  free(note_off.packet_buffer);
+  return 0;
+
+ }

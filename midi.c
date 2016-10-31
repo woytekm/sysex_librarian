@@ -338,56 +338,71 @@ void MIDI_init_MIDI_msg_lenghts(void)
      event_type = KEY_REFRESH_DISPLAY;
      write(G_keyboard_event_pipe[1],&event_type,1);
    }
-  else if((G_sequencer_state == SEQUENCER_RECORDING) && message_ok)
+  else if((G_active_app == APP_SEQUENCER) && message_ok)
    {
-    current_sequencer_ticks = G_sequencer_ticks;
-    if(midi_msgtype != 0xF0)
+ 
+    if(((G_sequencer_tracks[G_current_track].MIDI_channel) != midi_channel) && (midi_msgtype != 0xF0))   
      {
       if(!running_status)
        {
-         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],
-                                                                                                         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
-         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->running_status = 0;
+        midi_in_buffer[at_offset] = midi_msgtype | (G_sequencer_tracks[G_current_track].MIDI_channel - 1);    // set chanel to currenty recorded channel
+        write(G_MIDI_fd,(void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype]);                 // write message back to MIDI OUT
        }
       else
-       {
-          G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype] - 1,
-                                                                                                         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
-         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->running_status = 1; 
-         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->running_status_byte = G_last_status_byte;
-       }
-
+       write(G_MIDI_fd,(void *)&midi_in_buffer[at_offset],(G_MIDI_msg_lengths[midi_msgtype] - 1));            // write running status message back to MIDI OUT
      }
-    else
-      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],sysex_len,
+
+    if(G_sequencer_state == SEQUENCER_RECORDING)
+     {
+       current_sequencer_ticks = G_sequencer_ticks;
+       if(midi_msgtype != 0xF0)
+        {
+         if(!running_status)
+          {
+            G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype],
+                                                                                                         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
+            G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->running_status = 0;
+          }
+         else
+          {
+            G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],G_MIDI_msg_lengths[midi_msgtype] - 1,
+                                                                                                         G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
+            G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->running_status = 1; 
+            G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->running_status_byte = G_last_status_byte;
+          }
+
+        }
+      else
+        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain = MD_add_packet_to_chain((void *)&midi_in_buffer[at_offset],sysex_len,
                                                                                                        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain);
 
-    if(G_sequencer_tracks[G_current_track].parts[G_current_part].event_count == 0)
-     G_sequencer_tracks[G_current_track].parts[G_current_part].first_packet = G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain;
+      if(G_sequencer_tracks[G_current_track].parts[G_current_part].event_count == 0)
+        G_sequencer_tracks[G_current_track].parts[G_current_part].first_packet = G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain;
 
-    G_sequencer_tracks[G_current_track].parts[G_current_part].event_count++;
-    G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_id = G_sequencer_tracks[G_current_track].parts[G_current_part].event_count;
-    G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;
+      G_sequencer_tracks[G_current_track].parts[G_current_part].event_count++;
+      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_id = G_sequencer_tracks[G_current_track].parts[G_current_part].event_count;
+      G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = current_sequencer_ticks - G_last_sequencer_event_time;
 
-    //if(G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time == 0)
-    //  G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = 1;  // quick fix for now - player cannot play events if delta == 0 TODO
+      //if(G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time == 0)
+      //  G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time = 1;  // quick fix for now - player cannot play events if delta == 0 TODO
 
-    if(DEBUG_LEVEL == DEBUG_HIGH)
-     {
-      if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 2)
-       SYS_debug(DEBUG_HIGH,"record: packet [%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
+      if(DEBUG_LEVEL == DEBUG_HIGH)
+        {
+         if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 2)
+           SYS_debug(DEBUG_HIGH,"record: packet [%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
                                                                        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[1],
                                                                        G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time);
-      else if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 3)
-       SYS_debug(DEBUG_HIGH,"record: packet [%x,%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
+         else if((G_MIDI_msg_lengths[midi_msgtype] - running_status) == 3)
+           SYS_debug(DEBUG_HIGH,"record: packet [%x,%x,%x] arrival time: %d",G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[0],
                                                                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[1],
                                                                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->packet_buffer[2],
                                                                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain->arrival_time);
-     }
+        }
 
-    G_last_sequencer_event_time = current_sequencer_ticks;
-    event_type = KEY_REFRESH_DISPLAY;
-    write(G_keyboard_event_pipe[1],&event_type,1);
+      G_last_sequencer_event_time = current_sequencer_ticks;
+      event_type = KEY_REFRESH_DISPLAY;
+      write(G_keyboard_event_pipe[1],&event_type,1);
+     }
    }
 
    if(message_ok)

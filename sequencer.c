@@ -28,11 +28,13 @@ void SEQ_player(void *param)
    while(1)
     {
 
-       for(i = 0; i < 16; i++) 
-        {
-         all_notes_off.packet_buffer[0] = 0xB0 | i;     // silence all MIDI channels
-         MIDI_write_short_event(&all_notes_off);
-        }
+       //for(i = 0; i < 16; i++) 
+       // {
+       //  all_notes_off.packet_buffer[0] = 0xB0 | i;     // silence all MIDI channels
+       //  MIDI_write_short_event(&all_notes_off);
+       // }
+
+       MIDI_all_notes_off_on_all_channels();
 
        flags = fcntl(G_sequencer_player_command_pipe[0], F_GETFL, 0);
        flags &= ~O_NONBLOCK;
@@ -145,7 +147,6 @@ void SEQ_player(void *param)
         }
     }
  }
-
 
 
 
