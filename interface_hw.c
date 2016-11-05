@@ -526,17 +526,17 @@ uint8_t IH_MIDI_inout_indicator()
 
     if(event_type == MIDI_IN)
      {
-       LCDdrawstring(70,1,"I",TEXT_INVERTED);
+       LCDdrawstring(78,1,"<",TEXT_INVERTED);
      }
     else if(event_type == MIDI_OUT)
      {
-       LCDdrawstring(78,1,"O",TEXT_INVERTED);
+       LCDdrawstring(78,1,">",TEXT_INVERTED);
      }
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);
     usleep(130000);
-    LCDdrawstring(71,1,"  ",TEXT_INVERTED);
+    LCDdrawstring(78,1," ",TEXT_INVERTED);
     pthread_mutex_lock(&G_display_lock);
     LCDdisplay();
     pthread_mutex_unlock(&G_display_lock);

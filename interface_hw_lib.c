@@ -178,7 +178,7 @@ void IH_info(char *info_message)
 
    LCDclear();
    IH_set_status_bar("Info message  ");
-   IH_set_keymap_bar("","","","OK");
+   IH_set_keymap_bar("   ","   ","   ","OK ");
 
    LCDdrawstring(0,17,info_message,TEXT_NORMAL);
    pthread_mutex_lock(&G_display_lock);
@@ -219,8 +219,11 @@ uint8_t IH_yesno_dialog(char *dialog_message)
        {
         case KEY1:
          return 1;
+         break;
+
         case KEY4:
          return 0;
+         break;
        }
     }
 
@@ -228,6 +231,51 @@ uint8_t IH_yesno_dialog(char *dialog_message)
 
  }
 
+int32_t IH_set_integer(int32_t current_val,int32_t min_val, int32_t max_val, char *title)
+ {
+   int32_t save_val;
+   uint8_t do_exit, key_event;
+   char dialog_message[14];
+   do_exit = 0;
+   save_val = current_val;
+  
+   LCDclear();
+   IH_set_status_bar(title);
+   IH_set_keymap_bar("OK ","   ","   ","ESC");
+
+   while(!do_exit)
+    {
+     sprintf(dialog_message,"VAL: %04d ",current_val);
+
+     LCDdrawstring(0,17,dialog_message,TEXT_NORMAL);
+     pthread_mutex_lock(&G_display_lock);
+     LCDdisplay();
+     pthread_mutex_unlock(&G_display_lock);
+
+     read(G_keyboard_event_pipe[0],&key_event,1);
+
+     switch(key_event)
+       {
+        case KEY1:
+         return current_val;
+         break;
+        case KEY4:
+         return save_val;
+         break;
+        case ENC_UP:
+         if(current_val < max_val)
+          current_val++;
+         break;
+        case ENC_DOWN:
+         if(current_val > min_val)
+          current_val--;   
+         break;    
+       }
+    }
+
+  return 0;
+
+ }
 
 void IH_quick_info(char *info_message)
  {

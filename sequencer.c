@@ -103,10 +103,10 @@ void SEQ_player(void *param)
                 if(played_part_events[i] < G_sequencer_tracks[i].parts[current_part_in_track[i]].event_count)
                  {
                    current_packet_in_part[i] = current_packet_in_part[i]->next_packet;  
-                if(current_packet_in_part[i]->packet_len == 2)
-                  SYS_debug(DEBUG_HIGH,"play: next packet [%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],current_packet_in_part[i]->packet_buffer[1],current_packet_in_part[i]->arrival_time);
-                else if(current_packet_in_part[i]->packet_len == 3)
-                  SYS_debug(DEBUG_HIGH,"play: next packet [%x,%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],
+                   if(current_packet_in_part[i]->packet_len == 2)
+                    SYS_debug(DEBUG_HIGH,"play: next packet [%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],current_packet_in_part[i]->packet_buffer[1],current_packet_in_part[i]->arrival_time);
+                   else if(current_packet_in_part[i]->packet_len == 3)
+                    SYS_debug(DEBUG_HIGH,"play: next packet [%x,%x,%x] play time: %d",current_packet_in_part[i]->packet_buffer[0],
                                                                               current_packet_in_part[i]->packet_buffer[1],
                                                                               current_packet_in_part[i]->packet_buffer[2],
                                                                               current_packet_in_part[i]->arrival_time);
@@ -127,7 +127,7 @@ void SEQ_player(void *param)
                   {
                    SYS_debug(DEBUG_NORMAL,"player: end of the track %d",i);
                    current_packet_in_part[i] = NULL;                           // terminate this track - all of the parts were played
-                   all_notes_off.packet_buffer[0] = 0xB0 | (i - 1);            // set midi channel = track number (for now)
+                   all_notes_off.packet_buffer[0] = 0xB0 | (G_sequencer_tracks[i].MIDI_channel - 1);           
                    MIDI_write_short_event(&all_notes_off);
                   }
                }
@@ -265,6 +265,35 @@ void SEQ_initial_rec_LED_flash()
 
  }
 
+
+void SEQ_apply_MIDI_channel_to_events_in_track(uint8_t track)
+ {
+  uint16_t i;
+  midi_packet_t *current_event;
+
+  IH_quick_info(" Applying... ");
+
+  for(i = 1; i<=G_sequencer_tracks[track].part_count; i++)
+   {
+
+     current_event = G_sequencer_tracks[track].parts[i].first_packet;
+
+     while(current_event != NULL)
+      {
+       if((current_event->packet_buffer[0] < 240)&&(!current_event->running_status))   // if channel related message
+        {
+         printf("applying to event: %X\n",current_event->packet_buffer[0]);
+         current_event->packet_buffer[0] &= 240;                                    // clear channel from message
+         printf("event with channel cleared: %X\n",current_event->packet_buffer[0]);
+         current_event->packet_buffer[0] |= (G_sequencer_tracks[track].MIDI_channel - 1);  // set new channel
+         printf("event with new channel applied: %X\n\n",current_event->packet_buffer[0]);
+        }
+        current_event = current_event->next_packet;
+      }
+   }
+ }
+
+
 void SEQ_choose_track_and_part()
  {
 
@@ -295,7 +324,7 @@ void SEQ_choose_track_and_part()
      {
       LCDclear();
       IH_set_status_bar(" SET TRK/PART ");
-      IH_set_keymap_bar(" - "," + ","   ","OK ");
+      IH_set_keymap_bar(" - "," + ","CHN","OK ");
 
       if(G_sequencer_tracks[G_current_track].parts[G_current_part].event_count == 0)
        new_part = 1;
@@ -380,6 +409,12 @@ void SEQ_choose_track_and_part()
       lcd_needs_update = 1;
       break;
  
+     case KEY3:
+      G_sequencer_tracks[G_current_track].MIDI_channel = IH_set_integer(G_sequencer_tracks[G_current_track].MIDI_channel,1,16," SET MIDI CHN ");
+      SEQ_apply_MIDI_channel_to_events_in_track(G_current_track);
+      lcd_needs_update = 1;
+      break;
+
      case KEY4:
       return;
       break;
@@ -399,7 +434,6 @@ void SEQ_choose_track_and_part()
    }
 
  }
-
 
 void SEQ_sequencer_record()
  {
@@ -423,7 +457,7 @@ void SEQ_sequencer_record()
        {
          LCDclear();
          IH_set_keymap_bar("STP","PSE","   ","   ");
-         sprintf(seq_status," SEQ REC T%02d",G_current_track+1);
+         sprintf(seq_status," SEQ REC T%02d  ",G_current_track);
          IH_set_status_bar(seq_status);
        }
       else if(G_sequencer_state == SEQUENCER_REC_PAUSED)
@@ -445,7 +479,7 @@ void SEQ_sequencer_record()
        MD_display_packet(21,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count,
                           G_sequencer_tracks[G_current_track].parts[G_current_part].packet_chain,TEXT_INVERTED);
 
-      sprintf(track_part_info,"P:%02d/E:%04d",G_current_part,G_sequencer_tracks[G_current_track].parts[G_current_part].event_count);
+      sprintf(track_part_info,"C:%02d/T:%02d/P:%02d",G_sequencer_tracks[G_current_track].MIDI_channel,G_current_track,G_current_part);
       LCDdrawstring(0,11,track_part_info, TEXT_NORMAL);
 
       pthread_mutex_lock(&G_display_lock);
